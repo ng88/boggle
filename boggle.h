@@ -25,8 +25,7 @@ typedef enum
 enum {
     FL_FREE = 0,   /* free box */
     FL_BUSY = 1,   /* busy box */
-    FL_NORMAL = 3, /* normal box (letter) */
-    FL_WORD = 4,   /* box which is a part of a word */
+    FL_HIGHLIGTHED = 2,   /* box which is a part of a word */
 };
 
 const char dx[D_COUNT];
@@ -77,6 +76,12 @@ void print_board(board_t *b);
 score_t score_for_word(char * word);
 
 void boggle_start_ihm(board_t * b);
+
+
+/** highlight letter 'letter' if it matches a word in the grid.
+    letter can be [a-z] or backspace
+ */
+void boggle_highlight(board_t * b, char letter);
 
 
 #endif

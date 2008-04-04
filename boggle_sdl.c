@@ -81,14 +81,13 @@ void boggle_start_ihm(board_t * b)
 	    {
 	    case SDL_KEYUP:
 	    {
-		switch(event.key.keysym.sym)
-		{
-		case SDLK_ESCAPE:
-		case SDLK_q:
+		int key = event.key.keysym.sym;
+
+		if(key == SDLK_ESCAPE)
 		    stop = 1;
-		    break;
-		default:
-		    break;
+		else if(key >= SDLK_a && key <= SDLK_z)
+		{
+		    printf("%c\n", key);
 		}
 	    }
 	    break;
@@ -152,7 +151,7 @@ void render(board_t * b)
 	    int yy = y * BOX_SIZE_Y + BOARD_START_Y;
 
 	    draw_tile2(screen, boxes,
-		       0,1/**/,
+		       0, get_flag(b, x, y) == FL_HIGHLIGTHED ? 0 : 1,
 		       BOX_SIZE_Y,
 		       BOX_SIZE_X,
 		       xx, yy);
