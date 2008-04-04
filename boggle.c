@@ -205,9 +205,10 @@ void print_board(board_t *b)
     c_assert(b);
     size_t i, j;
 
-    for(i = 0; i < box_xcount(b); ++i)
+    
+    for(j = 0; j < box_ycount(b); ++j)
     {
-	for(j = 0; j < box_ycount(b); ++j)
+	for(i = 0; i < box_xcount(b); ++i)
 	{
 	    printf("%c ", get_box(b, i, j));
 	}

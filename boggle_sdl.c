@@ -12,7 +12,7 @@
 #include "sdl_draw.h"
 
 #define RES_BOXES "images/carre.bmp"
-#define RES_FONT "res/font.bmp"
+#define RES_FONT "images/font1.bmp"
 #define RES_SEL "res/selecteur.bmp"
 
 #define BGCOLOR 0xffffff
@@ -29,6 +29,9 @@
 #define BOX_SIZE_X 58
 #define BOX_SIZE_Y 58
 
+/* taille d'une lettre */
+#define FONT_SIZE_X 29
+#define FONT_SIZE_Y 25
 
 static int stop;
 static int changed;
@@ -102,9 +105,9 @@ void boggle_start_ihm(board_t * b)
 	render(b);
     }
 
-    //SDL_FreeSurface(font);
+    SDL_FreeSurface(font);
     SDL_FreeSurface(boxes);
-    //SDL_FreeSurface(screen);
+    SDL_FreeSurface(screen);
     SDL_Quit();
 }
 
@@ -115,6 +118,12 @@ void init(board_t * b)
     c_assert2(temp, "unable to load " RES_BOXES);
     boxes = SDL_ConvertSurface(temp, screen->format, SDL_SWSURFACE);
     c_assert(boxes);
+    SDL_FreeSurface(temp);
+
+    temp = SDL_LoadBMP(RES_FONT);
+    c_assert2(temp, "unable to load " RES_FONT);
+    font = SDL_ConvertSurface(temp, screen->format, SDL_SWSURFACE);
+    c_assert(font);
     SDL_FreeSurface(temp);
 
     draw_rect(screen, 0, 0, screen->w, screen->h, BGCOLOR);
@@ -147,6 +156,14 @@ void render(board_t * b)
 		       BOX_SIZE_Y,
 		       BOX_SIZE_X,
 		       xx, yy);
+
+	    draw_transparent_tile(screen, font,
+				  get_box(b, x, y) - LETTER_FIRST,
+				  FONT_SIZE_Y,
+				  FONT_SIZE_X,
+				  xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,
+				  yy + BOX_SIZE_Y / 2 - FONT_SIZE_Y / 2, 
+				  BGCOLOR);
 	}
 
      if(SDL_MUSTLOCK(screen)) 
