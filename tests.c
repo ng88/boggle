@@ -6,7 +6,7 @@
 
 int main()
 {
-    dico_t * dico  = open_dico("dico_en_final.txt");
+    dico_t * dico  = open_dico("dico_english.txt");
 
     board_t * b = create_board(dico, 4);
 
@@ -20,6 +20,7 @@ int main()
 
     print_board(b);
 
+    boggle_start_ihm(b);
 
     free_board(b);
     close_dico(dico);
@@ -31,7 +32,7 @@ int main2(int argc, char ** argv)
 {
 
 
-    dico_t * d  = open_dico("dico_en_final.txt");
+    dico_t * d  = open_dico("dico_english.txt");
     //dico_t * d  = open_dico("d.txt");
 
 

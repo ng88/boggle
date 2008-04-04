@@ -22,7 +22,12 @@ typedef enum
     D_COUNT = 8
 } dir_t;
 
-enum { FL_FREE = 0, FL_BUSY = 1};
+enum {
+    FL_FREE = 0,   /* free box */
+    FL_BUSY = 1,   /* busy box */
+    FL_NORMAL = 3, /* normal box (letter) */
+    FL_WORD = 4,   /* box which is a part of a word */
+};
 
 const char dx[D_COUNT];
 const char dy[D_COUNT];
@@ -70,6 +75,8 @@ void free_board(board_t * b);
 void print_board(board_t *b);
 
 score_t score_for_word(char * word);
+
+void boggle_start_ihm(board_t * b);
 
 
 #endif
