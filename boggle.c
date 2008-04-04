@@ -61,6 +61,7 @@ void fill_board(board_t * b)
     if(!init)
     {
 	srand(time(0));
+	//srand(23468798);
 	init = true;
     }
 
@@ -76,6 +77,25 @@ void fill_board(board_t * b)
 		    );
 	}
     }
+
+}
+
+void add_current_to_wordlist(board_t * b)
+{
+    int s = vector_size(b->wordlist) - 1;
+
+    if(s > -1)
+    {
+	int i;
+	for(i = s; i > -1; i--)
+	{
+	    char * w = (char*)vector_get_element_at(b->wordlist, i);
+	    if(!strcmp(b->current, w))
+		return;
+	}
+    }
+
+    vector_add_element(b->wordlist, strdup(b->current));
 
 }
 
@@ -98,7 +118,20 @@ void search_word(board_t * b, size_t i, size_t j)
     if(b->current_size > 2)
     {
         /* does a word begining with 'current' exists ?  */
-	print_current(b);
+
+	b->current[b->current_size] = '\0';
+	switch(word_exists(b->dico, b->current))
+	{
+	case A_NOT_FOUND:
+	    /* cancel ...*/
+	    return;
+	case A_PEFECT_MATCH:
+	    add_current_to_wordlist(b);
+	    break;
+	case A_BEGIN_MATCH:
+            /* let's continue */
+	    break;
+	}
     }
 
     for(d = 0; d < D_COUNT; ++d)
@@ -136,7 +169,6 @@ void create_wordlist(board_t * b)
 	    {
 		if(is_valid_dir(b, i, j, d) && get_flag(b, i, j) == FL_FREE)
 		{
-		    printf("%u %u %u\n", i, j, d);
 		    set_flag(b, i, j, FL_BUSY);
 		    search_word(b, i + dx[d], j + dy[d]);
 		    set_flag(b, i, j, FL_FREE);

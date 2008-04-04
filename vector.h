@@ -27,10 +27,13 @@ void vector_add_element_first(vector_t * v, vector_elt_t e);
 size_t vector_size(vector_t * v);
 size_t vector_capacity(vector_t * v);
 
+
+
 /** Detruit le vecteur v, si free_elt est non nul
  * les elements du vecteur sont detruits aussi.
  */
 void free_vector(vector_t * v, int free_elt);
+
 
 
 #define BOX_UINT(i) ((vector_elt_t)(i))
