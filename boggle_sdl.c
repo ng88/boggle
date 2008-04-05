@@ -50,6 +50,9 @@
 #define CMD_WIN_SIZE_X FOUND_WIN_SIZE_X
 #define CMD_WIN_SIZE_Y 80
 
+#define NEW_WIN_SIZE_X 200
+#define NEW_WIN_SIZE_Y 100
+
 static int stop;
 static int changed;
 static int playing;
@@ -58,6 +61,7 @@ static SDL_Surface *font;
 static SDL_Surface *font2;
 static SDL_Surface *boxes;
 static board_t * current_board;
+static AG_Window * win_new;
 
 void render();
 void init();
@@ -112,20 +116,29 @@ static void button_quit(AG_Event *event)
     AG_Quit();
 }
 
-static void button_new(AG_Event *event)
+static void button_new_valid(AG_Event *event)
 {
-    playing = 0;
-
-    AG_Window * win = AG_WindowNew(AG_WINDOW_MODAL);
-    AG_WindowSetSpacing(win, AG_WINDOW_CENTER);
-
-    AG_WindowSetCaption(win, "New game");
-    AG_WindowShow(win);
-
     fill_board(current_board);
     create_wordlist(current_board);
     boogle_start_game(current_board);
     print_board(current_board);
+
+    AG_WindowHide(win_new);
+    playing = 1;
+}
+
+static void button_new_cancel(AG_Event *event)
+{
+    AG_WindowHide(win_new);
+    playing = 1;
+}
+
+static void button_new(AG_Event *event)
+{
+    playing = 0;
+
+    AG_WindowShow(win_new);
+
 }
 
 void boggle_start_ihm(board_t * b)
@@ -214,6 +227,41 @@ void boggle_start_ihm(board_t * b)
     AG_WindowShow(win_score);
 
 
+
+
+   win_new = AG_WindowNew(AG_WINDOW_MODAL|AG_WINDOW_NOCLOSE);
+   AG_WindowSetGeometry(win_new, 
+			MAIN_WIN_SIZE_X / 2 - NEW_WIN_SIZE_X / 2,
+			MAIN_WIN_SIZE_Y / 2 - NEW_WIN_SIZE_Y / 2,
+			NEW_WIN_SIZE_X, NEW_WIN_SIZE_Y);
+    AG_WindowSetCaption(win_new, "New game");
+    AG_WindowSetCloseAction(win_new, AG_WINDOW_HIDE);
+
+    AG_Combo * com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Board size: ");
+    AG_ComboSizeHint(com, "0 x 1", 4);
+
+    int i;
+    for (i = 2; i <= 7; i++)
+	AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
+
+    com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Time: ");
+    AG_ComboSizeHint(com, "10 minutes", 4);
+
+    AG_TlistAdd(com->list, NULL, "unlimited", i, i);
+
+    for (i = 2; i <= 10; i++)
+	AG_TlistAdd(com->list, NULL, "%d minutes", i, i);
+
+    AG_SpacerNew(win_new, AG_SEPARATOR_VERT);
+
+    AG_HBox * hbox = AG_HBoxNew(win_new, AG_HBOX_HFILL | AG_BOX_HOMOGENOUS);
+
+    AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
+    AG_ButtonNewFn(hbox, 0, "OK", &button_new_valid, "");
+    AG_ButtonNewFn(hbox, 0, "Cancel", &button_new_cancel, "");
+    AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
+
+
     if (screen == NULL)
     {
 	fprintf(stderr, "Unable to set %dx%d video: %s\n", screen->w, screen->h, SDL_GetError());
@@ -235,7 +283,9 @@ void boggle_start_ihm(board_t * b)
  
     while(!stop)
     {
-	render(b);
+	if(playing)
+	    render(b);
+
 	Tr2 = SDL_GetTicks();
 	if(Tr2-Tr1 >= agView->rNom)
 	{		/* Time to redraw? */
