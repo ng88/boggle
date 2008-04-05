@@ -168,7 +168,7 @@ void render(board_t * b)
 	    int yy = y * BOX_SIZE_Y + BOARD_START_Y;
 
 	    draw_tile2(screen, boxes,
-		       0, get_flag(b, x, y) == FL_HIGHLIGTHED ? 0 : 1,
+		       0, get_flag(b, x, y),
 		       BOX_SIZE_Y,
 		       BOX_SIZE_X,
 		       xx, yy);
@@ -179,7 +179,7 @@ void render(board_t * b)
 					 FONT_SIZE_X,
 					 xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,
 					 yy + BOX_SIZE_Y / 2 - FONT_SIZE_Y / 2, 
-					 BGCOLOR, 0.40);
+					 BGCOLOR, 0.70);
 	}
 
     draw_rect(screen, 10, screen->h - font2->w - 8, screen->w, font2->w,  BGCOLOR);

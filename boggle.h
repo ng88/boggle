@@ -25,8 +25,9 @@ typedef enum
 enum 
 {
     FL_FREE = 0,   /* free box */
-    FL_BUSY = 1,   /* busy box */
-    FL_HIGHLIGTHED = 2,   /* box which is a part of a word */
+    FL_HIGHLIGTHED = 1,   /* box which is a part of a word */
+    FL_HIGHLIGTHED_END = 2,   /* box which is the end of a word */
+    FL_BUSY = 3,   /* busy box */
 };
 
 enum

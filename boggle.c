@@ -302,10 +302,62 @@ ans_t boogle_word_is_valid(board_t * b, char * word)
     return A_NOT_FOUND;
 }
 
+bool boggle_highlight_path_next(board_t * b, size_t i, size_t j, size_t pos)
+{
+   pos++;
+   if(pos < LARGER_WORD && b->current[pos] == '\0')
+   {
+       set_flag(b, i, j, FL_HIGHLIGTHED_END);
+       return true;
+   }
+
+   size_t d;
+
+   for(d = 0; d < D_COUNT; ++d)
+   {
+       size_t ii = i + dx[d];
+       size_t jj = j + dy[d];
+
+       if(is_valid_pos(b, ii, jj) &&
+	  get_flag(b, ii, jj) == FL_FREE &&
+	  get_box(b, ii, jj) == b->current[pos])
+       {
+	   set_flag(b, ii, jj, FL_HIGHLIGTHED);
+	   if(boggle_highlight_path_next(b, ii, jj, pos))
+	       return true;
+	   set_flag(b, ii, jj, FL_FREE);
+       }
+   }
+
+   return false;
+}
+
 bool boggle_highlight_path(board_t * b)
 {
-    printf("HIGHLIGHTED=%s\n", b->current);
-    return true;
+    c_assert(b);
+
+    size_t i, j;
+
+    boggle_reset_flags(b);
+
+    if(b->current_size == 0)
+	return true;
+
+    for(i = 0; i < box_xcount(b); ++i)
+    {
+	for(j = 0; j < box_ycount(b); ++j)
+	{
+	    if( get_box(b, i, j) == b->current[0] )
+	    {
+		set_flag(b, i, j, FL_HIGHLIGTHED);
+		if(boggle_highlight_path_next(b, i, j, 0))
+		    return true;
+		set_flag(b, i, j, FL_FREE);
+	    }
+	}
+    }
+    printf("FALSE\n");
+    return false;
 }
 
 void boggle_highlight(board_t * b, char letter)
@@ -343,6 +395,7 @@ void boggle_highlight(board_t * b, char letter)
 	    if(!boggle_highlight_path(b))
 		b->current[--b->current_size] = '\0';
 
+	    boggle_highlight_path(b);
 	}  
     }
 }
