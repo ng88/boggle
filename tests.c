@@ -8,7 +8,7 @@ int main()
 {
     dico_t * dico  = open_dico("dico_english.txt");
 
-    board_t * b = create_board(dico, 4);
+    board_t * b = create_board(dico, 5);
 
 
     fill_board(b);

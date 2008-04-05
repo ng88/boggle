@@ -8,6 +8,9 @@
 const char dx[D_COUNT] = { 0, 0, 1, -1,  1, -1, 1, -1};
 const char dy[D_COUNT] = {-1, 1, 0,  0, -1, -1, 1,  1};
 
+#define VOWEL_COUNT 6
+const char vowel[VOWEL_COUNT] = {'a', 'e', 'i', 'o', 'u', 'y'};
+
 /*
 
         N
@@ -72,9 +75,14 @@ void fill_board(board_t * b)
     {
 	for(j = 0; j < box_ycount(b); ++j)
 	{
-	    set_box(b, i, j, 
-		    LETTER_FIRST + (int)((double)(LETTER_LAST - LETTER_FIRST) * (rand() / (double)RAND_MAX))
-		    );
+	    char letter;
+
+	    if(rand() <= RAND_MAX / 3)
+		letter = vowel[(int)((double)(VOWEL_COUNT) * (rand() / (double)RAND_MAX))];		
+	    else
+		letter = LETTER_FIRST + (int)((double)(LETTER_LAST - LETTER_FIRST) * (rand() / (double)RAND_MAX));
+
+	    set_box(b, i, j, letter);
 	}
     }
 
