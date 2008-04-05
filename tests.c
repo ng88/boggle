@@ -10,16 +10,6 @@ int main()
 
     board_t * b = create_board(dico, 4);
 
-
-    fill_board(b);
-
-
-    print_board(b);
-
-    create_wordlist(b);
-
-    print_board(b);
-
     boggle_start_ihm(b);
 
     free_board(b);

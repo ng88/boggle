@@ -5,8 +5,10 @@
 
 #ifdef G_WINDOWS
 # include "SDL.h"
+# include "SDL_thread.h"
 #else
 # include "SDL/SDL.h"
+# include "SDL/SDL_thread.h"
 #endif
 
 #include <agar/core.h>
@@ -53,18 +55,25 @@
 #define NEW_WIN_SIZE_X 200
 #define NEW_WIN_SIZE_Y 100
 
+#define WAIT_WIN_SIZE_X 250
+#define WAIT_WIN_SIZE_Y 50
+
 static int stop;
 static int changed;
 static int playing;
+static int old_playing;
 static SDL_Surface *screen;
 static SDL_Surface *font;
 static SDL_Surface *font2;
 static SDL_Surface *boxes;
 static board_t * current_board;
 static AG_Window * win_new;
+static AG_Window * win_wait;
+static SDL_Thread * thread = NULL;
 
 void render();
 void init();
+void do_events();
 
 static int sort_string(const void *p1, const void *p2)
 {
@@ -101,8 +110,6 @@ static void update_foundtable(AG_Event *event)
 	//AG_TableAddRow(tbl, "%s:%d", "Total:", current_board->score);
 
 	AG_TableEnd(tbl);
-
-	printf("maj %d\n", rand());
     }
 }
 
@@ -116,27 +123,43 @@ static void button_quit(AG_Event *event)
     AG_Quit();
 }
 
-static void button_new_valid(AG_Event *event)
+
+int thread_create_game(void* d)
 {
     fill_board(current_board);
     create_wordlist(current_board);
     boogle_start_game(current_board);
     print_board(current_board);
 
-    AG_WindowHide(win_new);
+    AG_WindowHide(win_wait);
+
     playing = 1;
+
+    return 0;
+}
+
+static void button_new_valid(AG_Event *event)
+{
+    AG_WindowHide(win_new);
+    AG_WindowShow(win_wait);
+
+    if(thread)
+	SDL_WaitThread(thread, NULL);
+
+    thread = SDL_CreateThread(thread_create_game, NULL);
+
 }
 
 static void button_new_cancel(AG_Event *event)
 {
     AG_WindowHide(win_new);
-    playing = 1;
+    playing = old_playing;
 }
 
 static void button_new(AG_Event *event)
 {
+    old_playing = playing;
     playing = 0;
-
     AG_WindowShow(win_new);
 
 }
@@ -169,9 +192,6 @@ void boggle_start_ihm(board_t * b)
     win = AG_WindowNew(
 	AG_WINDOW_NOTITLE |
 	AG_WINDOW_NOBORDERS
-	//AG_WINDOW_NOCLOSE |
-	//AG_WINDOW_NOMINIMIZE |
-	//AG_WINDOW_NOMAXIMIZE
 	);
     AG_WindowSetGeometry(win, 
 			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, CMD_WIN_SIZE_Y,
@@ -235,7 +255,6 @@ void boggle_start_ihm(board_t * b)
 			MAIN_WIN_SIZE_Y / 2 - NEW_WIN_SIZE_Y / 2,
 			NEW_WIN_SIZE_X, NEW_WIN_SIZE_Y);
     AG_WindowSetCaption(win_new, "New game");
-    AG_WindowSetCloseAction(win_new, AG_WINDOW_HIDE);
 
     AG_Combo * com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Board size: ");
     AG_ComboSizeHint(com, "0 x 1", 4);
@@ -262,9 +281,19 @@ void boggle_start_ihm(board_t * b)
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
 
 
-    if (screen == NULL)
+    win_wait = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_NOCLOSE | AG_WINDOW_NORESIZE);
+    AG_WindowSetGeometry(win_wait, 
+			MAIN_WIN_SIZE_X / 2 - WAIT_WIN_SIZE_X / 2,
+			MAIN_WIN_SIZE_Y / 2 - WAIT_WIN_SIZE_Y / 2,
+			WAIT_WIN_SIZE_X, WAIT_WIN_SIZE_Y);
+    AG_WindowSetCaption(win_wait, "Information");
+    AG_LabelJustify(AG_LabelNewString(win_wait, AG_LABEL_HFILL, "Please wait while the game is loading..."), AG_TEXT_CENTER);
+
+
+
+    if(!screen)
     {
-	fprintf(stderr, "Unable to set %dx%d video: %s\n", screen->w, screen->h, SDL_GetError());
+	fprintf(stderr, "Unable to set to correct video mode, %s\n", SDL_GetError());
 	return;
     }
 
@@ -272,10 +301,8 @@ void boggle_start_ihm(board_t * b)
 
     init(b);
   
-    playing = 1;
-    boogle_start_game(b);
+    playing = 0;
     changed = 1;
-    
 
     extern struct ag_objectq agTimeoutObjQ;
     SDL_Event ev;
@@ -380,8 +407,12 @@ void boggle_start_ihm(board_t * b)
 	    /* Idle the rest of the time. */
 	    SDL_Delay(agView->rCur - agIdleThresh);
 	}
+
     }
 
+
+    if(thread)
+	SDL_WaitThread(thread, NULL);
 
     SDL_FreeSurface(font);
     SDL_FreeSurface(font2);
