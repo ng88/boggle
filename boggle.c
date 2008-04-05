@@ -153,7 +153,7 @@ void create_wordlist(board_t * b)
     c_assert(b);
     size_t i, j, d;
 
-    clear_vector(b->wordlist);
+    clear_vector(b->wordlist, 1);
 
     b->current_size = 1;
     boggle_reset_flags(b);
@@ -177,14 +177,15 @@ void create_wordlist(board_t * b)
     }
 }
 
-void start_game(board_t * b)
+void boogle_start_game(board_t * b)
 {
     c_assert(b);
 
     b->current_size = 0;
+    b->current[0] = '\0';
     boggle_reset_flags(b);
     b->score = 0;
-    clear_vector(b->foundword);
+    clear_vector(b->foundword, 1);
 }
 
 void boggle_reset_flags(board_t * b)
@@ -301,19 +302,31 @@ ans_t boogle_word_is_valid(board_t * b, char * word)
     return A_NOT_FOUND;
 }
 
+bool boggle_highlight_path(board_t * b)
+{
+    printf("HIGHLIGHTED=%s\n", b->current);
+    return true;
+}
+
 void boggle_highlight(board_t * b, char letter)
 {
-    c_assert(b && letter == KEY_BCKSPACE && letter == KEY_RETURN
-	     && letter >= LETTER_FIRST && letter <= LETTER_LAST);
+    c_assert(b &&
+	     ( letter == KEY_BCKSPACE || letter == KEY_RETURN
+	     || (letter >= LETTER_FIRST && letter <= LETTER_LAST)));
 
     if(letter == KEY_BCKSPACE)
     {
+	if(b->current_size > 0)
+	{
+	    b->current[--b->current_size] = '\0';
+	    boggle_highlight_path(b);
+	}
     }
     else if(letter == KEY_RETURN)
     {
 	if(boogle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
 	{
-	    vector_add_element(b->foundword, srtrdup(b->current));
+	    vector_add_element(b->foundword, strdup(b->current));
 	    b->score += score_for_word(b->current);
 	    b->current[0] = '\0';
 	    b->current_size = 0;
@@ -324,22 +337,11 @@ void boggle_highlight(board_t * b, char letter)
     {
 	if(b->current_size < LARGER_WORD - 2)
 	{
-	    b->current[b->current_size++] == letter;
-	    b->current[b->current_size] == '\0';
+	    b->current[b->current_size++] = letter;
+	    b->current[b->current_size] = '\0';
 
-
-	    switch(boogle_word_is_valid(b, b->current))
-	    {
-	    case A_NOT_FOUND:
-		b->current[--b->current_size] == '\0';
-		return;
-	    case A_PEFECT_MATCH:
-
-	    break;
-	    case A_BEGIN_MATCH:
-		/* let's continue */
-		break;
-	    }
+	    if(!boggle_highlight_path(b))
+		b->current[--b->current_size] = '\0';
 
 	}  
     }

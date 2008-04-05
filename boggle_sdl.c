@@ -13,6 +13,7 @@
 
 #define RES_BOXES "images/carre.bmp"
 #define RES_FONT "images/font1.bmp"
+#define RES_FONT2 "images/font2.bmp"
 #define RES_SEL "res/selecteur.bmp"
 
 #define BGCOLOR 0xffffff
@@ -23,7 +24,7 @@
 
 /* espace apres le plateau */
 #define  BOARD_RIGHT 10
-#define BOARD_BOTTOM 10
+#define BOARD_BOTTOM (10+25)
 
 /* taille d'une case */
 #define BOX_SIZE_X 58
@@ -37,6 +38,7 @@ static int stop;
 static int changed;
 static SDL_Surface *screen;
 static SDL_Surface *font;
+static SDL_Surface *font2;
 static SDL_Surface *boxes;
 
 void render(board_t * b);
@@ -67,12 +69,12 @@ void boggle_start_ihm(board_t * b)
  
     init(b);
 
+    boogle_start_game(b);
+
     changed = 1;
     
     while(!stop)
     {
-
-	changed = 0;
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) 
@@ -85,9 +87,12 @@ void boggle_start_ihm(board_t * b)
 
 		if(key == SDLK_ESCAPE)
 		    stop = 1;
-		else if(key >= SDLK_a && key <= SDLK_z)
+		else if((key >= SDLK_a && key <= SDLK_z) ||
+			 key == SDLK_RETURN ||
+	  		 key == SDLK_BACKSPACE)
 		{
-		    printf("%c\n", key);
+		    boggle_highlight(b, key);
+		    changed = 1;
 		}
 	    }
 	    break;
@@ -105,6 +110,7 @@ void boggle_start_ihm(board_t * b)
     }
 
     SDL_FreeSurface(font);
+    SDL_FreeSurface(font2);
     SDL_FreeSurface(boxes);
     SDL_FreeSurface(screen);
     SDL_Quit();
@@ -125,6 +131,12 @@ void init(board_t * b)
     c_assert(font);
     SDL_FreeSurface(temp);
 
+    temp = SDL_LoadBMP(RES_FONT2);
+    c_assert2(temp, "unable to load " RES_FONT2);
+    font2 = SDL_ConvertSurface(temp, screen->format, SDL_SWSURFACE);
+    c_assert(font2);
+    SDL_FreeSurface(temp);
+
     draw_rect(screen, 0, 0, screen->w, screen->h, BGCOLOR);
 
     stop = 0;
@@ -135,6 +147,11 @@ void init(board_t * b)
 
 void render(board_t * b)
 {
+
+    if(!changed)
+	return;
+
+    changed = 0;
 
     if(SDL_MUSTLOCK(screen))
 	if(SDL_LockSurface(screen) < 0) 
@@ -164,6 +181,10 @@ void render(board_t * b)
 					 yy + BOX_SIZE_Y / 2 - FONT_SIZE_Y / 2, 
 					 BGCOLOR, 0.40);
 	}
+
+    draw_rect(screen, 10, screen->h - font2->w - 8, screen->w, font2->w,  BGCOLOR);
+    draw_string(screen, font2, 10, screen->h - font2->w - 8, b->current);
+
 
      if(SDL_MUSTLOCK(screen)) 
 	SDL_UnlockSurface(screen);

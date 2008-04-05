@@ -76,7 +76,7 @@ void fill_board(board_t * b);
 
 void create_wordlist(board_t * b);
 
-void start_game(board_t * b);
+void boogle_start_game(board_t * b);
 
 void free_board(board_t * b);
 
@@ -95,5 +95,6 @@ ans_t boogle_word_is_valid(board_t * b, char * word);
  */
 void boggle_highlight(board_t * b, char letter);
 
+bool boggle_highlight_path(board_t * b);
 
 #endif
