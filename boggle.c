@@ -58,6 +58,46 @@ board_t * create_board(dico_t * dico, size_t s)
     return b;
 }
 
+void boggle_resize_board(board_t * b, size_t s)
+{
+    if(s == b->size)
+	return;
+    else if(s < b->size)
+	b->size = s;
+    else
+    {
+	size_t i;
+	for(i = 0; i < b->size; ++i)
+	{
+	    free(b->cs[i]);
+	    free(b->fl[i]);
+	}
+	
+	free(b->cs);
+	free(b->fl);
+
+	b->cs = (box_t**)malloc(sizeof(box_t*) * s);
+	c_assert2(b->cs, "malloc failed");
+
+	b->fl = (box_t**)malloc(sizeof(box_t*) * s);
+	c_assert2(b->fl, "malloc failed");
+
+	b->size = s;
+
+	for(i = 0; i < s; ++i)
+	{
+	    b->cs[i] = (box_t*)malloc(sizeof(box_t) * s);
+	    c_assert2(b->cs[i], "malloc failed");
+	    
+	    b->fl[i] = (box_t*)malloc(sizeof(box_t) * s);
+	    c_assert2(b->fl[i], "malloc failed");
+	    
+	}
+
+    }
+}
+
+
 void fill_board(board_t * b)
 {
     static bool init = false;

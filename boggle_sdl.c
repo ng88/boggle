@@ -61,10 +61,10 @@
 #define NORMAL_FPS 30
 #define MINIMAL_FPS 2
 
-static int stop;
-static int changed;
-static int playing;
-static int old_playing;
+static volatile int stop;
+static volatile int changed;
+static volatile int playing;
+static volatile int old_playing;
 static SDL_Surface *screen;
 static SDL_Surface *font;
 static SDL_Surface *font2;
@@ -73,6 +73,7 @@ static board_t * current_board;
 static AG_Window * win_new;
 static AG_Window * win_wait;
 static SDL_Thread * thread = NULL;
+static volatile int new_board_size;
 
 void render();
 void init();
@@ -116,6 +117,13 @@ static void update_foundtable(AG_Event *event)
     }
 }
 
+
+static void board_size_changed(AG_Event *event)
+{
+    AG_TlistItem * item = AG_PTR(1);
+    new_board_size = (int)item->p1;
+}
+
 static void button_giveup(AG_Event *event)
 {
 
@@ -131,10 +139,13 @@ int thread_create_game(void* d)
 {
     AG_SetRefreshRate(MINIMAL_FPS);
 
+    boggle_resize_board(current_board, new_board_size);
     fill_board(current_board);
     create_wordlist(current_board);
     boogle_start_game(current_board);
     print_board(current_board);
+
+    draw_rect(screen, 0, 0, screen->w, screen->h, BGCOLOR);
 
     AG_SetRefreshRate(NORMAL_FPS);
 
@@ -169,6 +180,7 @@ static void button_new(AG_Event *event)
 {
     old_playing = playing;
     playing = 0;
+    new_board_size = 1;
     AG_WindowShow(win_new);
 
 }
@@ -275,10 +287,12 @@ void boggle_start_ihm(board_t * b)
 
     AG_Combo * com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Board size: ");
     AG_ComboSizeHint(com, "0 x 1", 6);
+    AG_TlistSetChangedFn(com->list, board_size_changed, NULL);
 
     int i;
     for (i = 2; i <= 7; i++)
-	AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
+	AG_TlistAdd(com->list, NULL, "%d x %d", i, i)->p1 = (void*)i;
+
 
     com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Time: ");
     AG_ComboSizeHint(com, "10 minutes", 11);
@@ -293,7 +307,7 @@ void boggle_start_ihm(board_t * b)
     AG_HBox * hbox = AG_HBoxNew(win_new, AG_HBOX_HFILL | AG_BOX_HOMOGENOUS);
 
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
-    AG_ButtonNewFn(hbox, 0, "OK", &button_new_valid, "%p", com);
+    AG_ButtonNewFn(hbox, 0, "OK", &button_new_valid, NULL);
     AG_ButtonNewFn(hbox, 0, "Cancel", &button_new_cancel, NULL);
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
 
