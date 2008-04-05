@@ -88,22 +88,21 @@ void fill_board(board_t * b)
 
 }
 
-void add_current_to_wordlist(board_t * b)
+void add_unique_word_to_list(vector_t * list, char * word)
 {
-    int s = vector_size(b->wordlist) - 1;
+    int s = vector_size(list) - 1;
 
     if(s > -1)
     {
 	int i;
 	for(i = s; i > -1; i--)
 	{
-	    char * w = (char*)vector_get_element_at(b->wordlist, i);
-	    if(!strcmp(b->current, w))
+	    if(!strcmp(word, (char*)vector_get_element_at(list, i)))
 		return;
 	}
     }
 
-    vector_add_element(b->wordlist, strdup(b->current));
+    vector_add_element(list, strdup(word));
 
 }
 
@@ -134,7 +133,7 @@ void search_word(board_t * b, size_t i, size_t j)
 	    /* cancel ...*/
 	    return;
 	case A_PEFECT_MATCH:
-	    add_current_to_wordlist(b);
+	    add_unique_word_to_list(b->wordlist, b->current);
 	    break;
 	case A_BEGIN_MATCH:
             /* let's continue */
@@ -386,8 +385,13 @@ void boggle_highlight(board_t * b, char letter)
     {
 	if(boogle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
 	{
-	    vector_add_element(b->foundword, strdup(b->current));
-	    b->score += score_for_word(b->current);
+	    size_t old = vector_size(b->foundword);
+
+	    add_unique_word_to_list(b->foundword, b->current);
+
+	    if(old < vector_size(b->foundword))
+		b->score += score_for_word(b->current);
+
 	    b->current[0] = '\0';
 	    b->current_size = 0;
 	    boggle_reset_flags(b);

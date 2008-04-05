@@ -43,26 +43,65 @@ static SDL_Surface *screen;
 static SDL_Surface *font;
 static SDL_Surface *font2;
 static SDL_Surface *boxes;
+static board_t * current_board;
 
 void render(board_t * b);
 void init(board_t * b);
 
-
-board_t * bb;
-void test(AG_Event *event)
+static int sort_string(const void *p1, const void *p2)
 {
-    render(bb);
-    printf("salut\n");
+	const AG_TableCell *c1 = p1;
+	const AG_TableCell *c2 = p2;
+	return (strcoll(c1->data.s, c2->data.s));
+}
+ 
+static int sort_int(const void *p1, const void *p2)
+{
+	const AG_TableCell *c1 = p1;
+	const AG_TableCell *c2 = p2;
+	return (c1->data.i - c2->data.i);
+}
+
+static void update_foundtable(AG_Event *event)
+{
+
+    static size_t last_size = 0;
+
+    if(last_size != vector_size(current_board->foundword))
+    {
+	last_size = vector_size(current_board->foundword);
+
+	AG_Table * tbl = AG_SELF();
+	AG_TableBegin(tbl);
+
+	int i;
+	for(i = 0; i < last_size; ++i)
+	{
+	    char * w = (char*)vector_get_element_at(current_board->foundword, i);
+	    AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
+	}
+ 
+	AG_TableEnd(tbl);
+
+	printf("maj %d\n", rand());
+    }
 }
 
 void boggle_start_ihm(board_t * b)
 {
 
+    c_assert(b);
+    current_board = b;
+
     if (AG_InitCore("Boggle", 0) == -1) {
 	fprintf(stderr, "%s\n", AG_GetError());
 	return;
     }
-    if (AG_InitVideo(640, 460, 32, AG_VIDEO_RESIZABLE) == -1) {
+    if (AG_InitVideo(640, 460, 32, 
+		     SDL_SWSURFACE | 
+		     SDL_DOUBLEBUF
+	    ) == -1)
+    {
 	fprintf(stderr, "%s\n", AG_GetError());
 	return;
     }
@@ -78,10 +117,12 @@ void boggle_start_ihm(board_t * b)
 
 
 
-    AG_Table * tbl = AG_TableNew(win, AG_TABLE_EXPAND);
-    AG_TableAddCol(tbl, "Found word", "<LARGER WORD POSS>", NULL);
-    AG_TableAddCol(tbl, "Score", "<110>", NULL);
+    //AG_Table * tbl = AG_TableNew(win, AG_TABLE_EXPAND);
+    AG_Table * tbl = AG_TableNewPolled(win, AG_TABLE_EXPAND, update_foundtable, NULL);
+    AG_TableAddCol(tbl, "Found word", "<LARGER WORD POSS>", &sort_string);
+    AG_TableAddCol(tbl, "Score", "<110>", &sort_int);
     
+/*
     AG_TableBegin(tbl);
 
     int i;
@@ -94,7 +135,7 @@ void boggle_start_ihm(board_t * b)
 
 
     AG_TableEnd(tbl);
-
+*/
 
     //AG_WindowSetPosition(win, AG_WINDOW_UPPER_RIGHT, 0);
     AG_WindowShow(win);
@@ -127,12 +168,8 @@ void boggle_start_ihm(board_t * b)
     AG_BindGlobalKey(SDLK_ESCAPE, KMOD_NONE, AG_Quit);
 
     init(b);
-    bb=b;
   
-
     boogle_start_game(b);
-
-
     changed = 1;
     
 
