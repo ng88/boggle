@@ -28,6 +28,7 @@ size_t vector_size(vector_t * v);
 size_t vector_capacity(vector_t * v);
 
 
+void clear_vector(vector_t * v, int free_elt);
 
 /** Detruit le vecteur v, si free_elt est non nul
  * les elements du vecteur sont detruits aussi.

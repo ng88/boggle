@@ -156,13 +156,13 @@ void render(board_t * b)
 		       BOX_SIZE_X,
 		       xx, yy);
 
-	    draw_transparent_tile(screen, font,
-				  get_box(b, x, y) - LETTER_FIRST,
-				  FONT_SIZE_Y,
-				  FONT_SIZE_X,
-				  xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,
-				  yy + BOX_SIZE_Y / 2 - FONT_SIZE_Y / 2, 
-				  BGCOLOR);
+	    draw_smooth_transparent_tile(screen, font,
+					 get_box(b, x, y) - LETTER_FIRST,
+					 FONT_SIZE_Y,
+					 FONT_SIZE_X,
+					 xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,
+					 yy + BOX_SIZE_Y / 2 - FONT_SIZE_Y / 2, 
+					 BGCOLOR, 0.40);
 	}
 
      if(SDL_MUSTLOCK(screen)) 

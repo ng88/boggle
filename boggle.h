@@ -22,10 +22,17 @@ typedef enum
     D_COUNT = 8
 } dir_t;
 
-enum {
+enum 
+{
     FL_FREE = 0,   /* free box */
     FL_BUSY = 1,   /* busy box */
     FL_HIGHLIGTHED = 2,   /* box which is a part of a word */
+};
+
+enum
+{
+    KEY_RETURN = 13,
+    KEY_BCKSPACE = 8,
 };
 
 const char dx[D_COUNT];
@@ -69,6 +76,8 @@ void fill_board(board_t * b);
 
 void create_wordlist(board_t * b);
 
+void start_game(board_t * b);
+
 void free_board(board_t * b);
 
 void print_board(board_t *b);
@@ -77,9 +86,12 @@ score_t score_for_word(char * word);
 
 void boggle_start_ihm(board_t * b);
 
+void boggle_reset_flags(board_t * b);
+
+ans_t boogle_word_is_valid(board_t * b, char * word);
 
 /** highlight letter 'letter' if it matches a word in the grid.
-    letter can be [a-z] or backspace
+    letter can be [a-z], backspace or return.
  */
 void boggle_highlight(board_t * b, char letter);
 

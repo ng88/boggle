@@ -12,8 +12,8 @@ void draw_tile(SDL_Surface *screen, SDL_Surface *tiles, int tile, int tile_size_
     int i, j;
     for (i = 0; i < tile_size_x; i++)
     {
-	int screenofs = x + (y + i) * (screen->pitch / 4);
-	int tileofs = (i + tile * tile_size_x) * (tiles->pitch / 4);
+	register int screenofs = x + (y + i) * (screen->pitch / 4);
+	register int tileofs = (i + tile * tile_size_x) * (tiles->pitch / 4);
 	for (j = 0; j < tile_size_y; j++)
 	{
 	    ((unsigned int*)screen->pixels)[screenofs] = 
@@ -37,13 +37,46 @@ void draw_transparent_tile(SDL_Surface *screen, SDL_Surface *tiles, int tile, in
     int i, j;
     for (i = 0; i < tile_size_x; i++)
     {
-	int screenofs = x + (y + i) * (screen->pitch / 4);
-	int tileofs = (i + tile * tile_size_x) * (tiles->pitch / 4);
+	register int screenofs = x + (y + i) * (screen->pitch / 4);
+	register int tileofs = (i + tile * tile_size_x) * (tiles->pitch / 4);
 	for (j = 0; j < tile_size_y; j++)
 	{
 	    if(((unsigned int*)tiles->pixels)[tileofs] != transparent_color)
 		((unsigned int*)screen->pixels)[screenofs] = 
 		    ((unsigned int*)tiles->pixels)[tileofs];
+
+	    screenofs++;
+	    tileofs++;
+	}
+    }
+    
+    if (SDL_MUSTLOCK(tiles)) 
+        SDL_UnlockSurface(tiles);
+}
+
+void draw_smooth_transparent_tile(SDL_Surface *screen, SDL_Surface *tiles, int tile, int tile_size_x, int tile_size_y, int x, int y, unsigned int transparent_color, float transparency_pc)
+{
+
+    if (SDL_MUSTLOCK(tiles))
+	if (SDL_LockSurface(tiles) < 0) 
+	    return;
+
+    int i, j;
+    for (i = 0; i < tile_size_x; i++)
+    {
+	register int screenofs = x + (y + i) * (screen->pitch / 4);
+	register int tileofs = (i + tile * tile_size_x) * (tiles->pitch / 4);
+	for (j = 0; j < tile_size_y; j++)
+	{
+	    register unsigned int px = ((unsigned int*)tiles->pixels)[tileofs];
+
+	    register float pc = 1 - (float)px / (float)transparent_color;
+
+	    if( pc <= transparency_pc )
+		((unsigned int*)screen->pixels)[screenofs] = 
+		    ((unsigned int*)screen->pixels)[screenofs] & px;
+	    else
+		((unsigned int*)screen->pixels)[screenofs] = px;
 
 	    screenofs++;
 	    tileofs++;
@@ -64,8 +97,8 @@ void draw_tile2(SDL_Surface *screen, SDL_Surface *tiles, int tilex, int tiley, i
     int i, j;
     for (i = 0; i < tile_size_x; i++)
     {
-	int screenofs = x + (y + i) * (screen->pitch / 4);
-	int tileofs =  tilex * tile_size_y + (i + tiley * tile_size_x) * (tiles->pitch / 4);
+	register int screenofs = x + (y + i) * (screen->pitch / 4);
+	register int tileofs =  tilex * tile_size_y + (i + tiley * tile_size_x) * (tiles->pitch / 4);
 	for (j = 0; j < tile_size_y; j++)
 	{
 	    ((unsigned int*)screen->pixels)[screenofs] = 

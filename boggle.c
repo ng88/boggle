@@ -153,11 +153,10 @@ void create_wordlist(board_t * b)
     c_assert(b);
     size_t i, j, d;
 
-    b->current_size = 1;
-    for(i = 0; i < box_xcount(b); ++i)
-	for(j = 0; j < box_ycount(b); ++j)
-	    set_flag(b, i, j, FL_FREE);
+    clear_vector(b->wordlist);
 
+    b->current_size = 1;
+    boggle_reset_flags(b);
 
     for(i = 0; i < box_xcount(b); ++i)
     {
@@ -178,11 +177,31 @@ void create_wordlist(board_t * b)
     }
 }
 
+void start_game(board_t * b)
+{
+    c_assert(b);
+
+    b->current_size = 0;
+    boggle_reset_flags(b);
+    b->score = 0;
+    clear_vector(b->foundword);
+}
+
+void boggle_reset_flags(board_t * b)
+{
+    size_t i, j;
+
+    for(i = 0; i < box_xcount(b); ++i)
+	for(j = 0; j < box_ycount(b); ++j)
+	    set_flag(b, i, j, FL_FREE);
+}
+
+
 void free_board(board_t * b)
 {
     if(!b) return;
 
-    free_vector(b->foundword, 0);
+    free_vector(b->foundword, 1);
     free_vector(b->wordlist, 1);
 
     size_t i;
@@ -248,6 +267,81 @@ score_t score_for_word(char * word)
     case 6: return 3;
     case 7: return 5;
     default: return 11;
+    }
+}
+
+ans_t boogle_word_is_valid(board_t * b, char * word)
+{
+    c_assert(b && word);
+
+    size_t i;
+
+    for(i = 0; i < vector_size(b->wordlist); ++i)
+    {
+	char * s1 = (char*)vector_get_element_at(b->wordlist, i);
+	char * s2 = word;
+
+	while(*s1 != '\0' && *s2 != '\0'  && *s1 == *s2)
+	{
+	    s1++;
+	    s2++;
+	}
+
+	if(*s2 == '\0') /* we get at the 
+		       end of the input word*/
+	{
+	    if(*s1 == '\0') /* we get at the
+			    end of the dico word*/
+		return A_PEFECT_MATCH;
+	    else
+		return A_BEGIN_MATCH;
+	}
+    }
+
+    return A_NOT_FOUND;
+}
+
+void boggle_highlight(board_t * b, char letter)
+{
+    c_assert(b && letter == KEY_BCKSPACE && letter == KEY_RETURN
+	     && letter >= LETTER_FIRST && letter <= LETTER_LAST);
+
+    if(letter == KEY_BCKSPACE)
+    {
+    }
+    else if(letter == KEY_RETURN)
+    {
+	if(boogle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
+	{
+	    vector_add_element(b->foundword, srtrdup(b->current));
+	    b->score += score_for_word(b->current);
+	    b->current[0] = '\0';
+	    b->current_size = 0;
+	    boggle_reset_flags(b);
+	}
+    }
+    else
+    {
+	if(b->current_size < LARGER_WORD - 2)
+	{
+	    b->current[b->current_size++] == letter;
+	    b->current[b->current_size] == '\0';
+
+
+	    switch(boogle_word_is_valid(b, b->current))
+	    {
+	    case A_NOT_FOUND:
+		b->current[--b->current_size] == '\0';
+		return;
+	    case A_PEFECT_MATCH:
+
+	    break;
+	    case A_BEGIN_MATCH:
+		/* let's continue */
+		break;
+	    }
+
+	}  
     }
 }
 

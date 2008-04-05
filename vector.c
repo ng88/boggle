@@ -76,16 +76,23 @@ size_t vector_capacity(vector_t * v)
     return v->capacity;
 }
 
-void free_vector(vector_t * v, int free_elt)
+void clear_vector(vector_t * v, int free_elt)
 {
-    if(!v) return;
-
+    c_assert(v);
     if(free_elt)
     {
 	unsigned int i;
 	for(i = 0; i < v->size; ++i)
 	    free(v->table[i]);
     }
+    v->size = 0;
+}
+
+void free_vector(vector_t * v, int free_elt)
+{
+    if(!v) return;
+
+    clear_vector(v, free_elt);
 
     free(v->table);
 
