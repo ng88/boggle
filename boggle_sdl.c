@@ -160,6 +160,13 @@ int thread_create_game(void* d)
 static void button_new_valid(AG_Event *event)
 {
 
+    if(new_board_size == -1)
+    {
+	AG_TextMsg(AG_MSG_ERROR, "Please select a board size!");
+	return;
+    }
+
+
     AG_WindowHide(win_new);
     AG_WindowShow(win_wait);
 
@@ -180,7 +187,7 @@ static void button_new(AG_Event *event)
 {
     old_playing = playing;
     playing = 0;
-    new_board_size = 1;
+    new_board_size = -1;
     AG_WindowShow(win_new);
 
 }
