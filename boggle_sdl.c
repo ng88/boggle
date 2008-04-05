@@ -58,6 +58,9 @@
 #define WAIT_WIN_SIZE_X 250
 #define WAIT_WIN_SIZE_Y 50
 
+#define NORMAL_FPS 30
+#define MINIMAL_FPS 2
+
 static int stop;
 static int changed;
 static int playing;
@@ -126,10 +129,14 @@ static void button_quit(AG_Event *event)
 
 int thread_create_game(void* d)
 {
+    AG_SetRefreshRate(MINIMAL_FPS);
+
     fill_board(current_board);
     create_wordlist(current_board);
     boogle_start_game(current_board);
     print_board(current_board);
+
+    AG_SetRefreshRate(NORMAL_FPS);
 
     AG_WindowHide(win_wait);
 
@@ -221,6 +228,9 @@ void boggle_start_ihm(board_t * b)
     AG_WindowShow(win);
 
 
+
+
+
     win_cmd = AG_WindowNew(AG_WINDOW_NOTITLE | AG_WINDOW_NOBORDERS);
     AG_WindowSetGeometry(win_cmd, 
 			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, 0,
@@ -231,6 +241,8 @@ void boggle_start_ihm(board_t * b)
     AG_ButtonNewFn(vbox, 0, "Give up", &button_giveup, NULL);
     AG_ButtonNewFn(vbox, 0, "Quit", &button_quit, NULL);
     AG_WindowShow(win_cmd);
+
+
 
 
 
@@ -249,7 +261,10 @@ void boggle_start_ihm(board_t * b)
 
 
 
-   win_new = AG_WindowNew(AG_WINDOW_MODAL|AG_WINDOW_NOCLOSE);
+
+
+
+   win_new = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_NOCLOSE);
    AG_WindowSetGeometry(win_new, 
 			MAIN_WIN_SIZE_X / 2 - NEW_WIN_SIZE_X / 2,
 			MAIN_WIN_SIZE_Y / 2 - NEW_WIN_SIZE_Y / 2,
@@ -257,18 +272,18 @@ void boggle_start_ihm(board_t * b)
     AG_WindowSetCaption(win_new, "New game");
 
     AG_Combo * com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Board size: ");
-    AG_ComboSizeHint(com, "0 x 1", 4);
+    AG_ComboSizeHint(com, "0 x 1", 6);
 
     int i;
     for (i = 2; i <= 7; i++)
 	AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
 
     com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Time: ");
-    AG_ComboSizeHint(com, "10 minutes", 4);
+    AG_ComboSizeHint(com, "10 minutes", 11);
 
     AG_TlistAdd(com->list, NULL, "unlimited", i, i);
 
-    for (i = 2; i <= 10; i++)
+    for (i = 1; i <= 10; i++)
 	AG_TlistAdd(com->list, NULL, "%d minutes", i, i);
 
     AG_SpacerNew(win_new, AG_SEPARATOR_VERT);
@@ -281,6 +296,9 @@ void boggle_start_ihm(board_t * b)
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
 
 
+
+
+
     win_wait = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_NOCLOSE | AG_WINDOW_NORESIZE);
     AG_WindowSetGeometry(win_wait, 
 			MAIN_WIN_SIZE_X / 2 - WAIT_WIN_SIZE_X / 2,
@@ -289,6 +307,7 @@ void boggle_start_ihm(board_t * b)
     AG_WindowSetCaption(win_wait, "Information");
     AG_LabelJustify(AG_LabelNewString(win_wait, AG_LABEL_HFILL, "Please wait while the game is loading..."), AG_TEXT_CENTER);
 
+    AG_SetRefreshRate(NORMAL_FPS);
 
 
     if(!screen)
@@ -314,6 +333,7 @@ void boggle_start_ihm(board_t * b)
 	    render(b);
 
 	Tr2 = SDL_GetTicks();
+
 	if(Tr2-Tr1 >= agView->rNom)
 	{		/* Time to redraw? */
 	    AG_LockVFS(agView);
@@ -392,7 +412,7 @@ void boggle_start_ihm(board_t * b)
 
 	    if(!processed)
 	    {
-		changed = 1;
+		//changed = 1;
 		AG_ProcessEvent(&ev);
 	    }
 
