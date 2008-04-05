@@ -73,7 +73,7 @@ static board_t * current_board;
 static AG_Window * win_new;
 static AG_Window * win_wait;
 static SDL_Thread * thread = NULL;
-static volatile int new_board_size;
+static volatile int new_board_size = -1;
 
 void render();
 void init();
@@ -187,7 +187,6 @@ static void button_new(AG_Event *event)
 {
     old_playing = playing;
     playing = 0;
-    new_board_size = -1;
     AG_WindowShow(win_new);
 
 }
