@@ -18,7 +18,7 @@
 #define RES_FONT "res/font1.bmp"
 #define RES_FONT2 "res/font2.bmp"
 #define RES_SEL "res/selecteur.bmp"
-#define RES_COLOR "res/color.acs"
+#define RES_COLORS "res/color.acs"
 
 #define BGCOLOR 0xffffff
 
@@ -38,8 +38,21 @@
 #define FONT_SIZE_X 29
 #define FONT_SIZE_Y 25
 
+#define MAIN_WIN_SIZE_X 640
+#define MAIN_WIN_SIZE_Y 460
+
+#define FOUND_WIN_SIZE_X 200
+#define FOUND_WIN_SIZE_Y 230
+
+#define SCORE_WIN_SIZE_X FOUND_WIN_SIZE_X
+#define SCORE_WIN_SIZE_Y 100
+
+#define CMD_WIN_SIZE_X FOUND_WIN_SIZE_X
+#define CMD_WIN_SIZE_Y 80
+
 static int stop;
 static int changed;
+static int playing;
 static SDL_Surface *screen;
 static SDL_Surface *font;
 static SDL_Surface *font2;
@@ -81,12 +94,38 @@ static void update_foundtable(AG_Event *event)
 	    char * w = (char*)vector_get_element_at(current_board->foundword, i);
 	    AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
 	}
-	AG_TableAddRow(tbl, "%s:%d", "Total:", current_board->score);
+	//AG_TableAddRow(tbl, "%s:%d", "Total:", current_board->score);
 
 	AG_TableEnd(tbl);
 
 	printf("maj %d\n", rand());
     }
+}
+
+static void button_giveup(AG_Event *event)
+{
+
+}
+
+static void button_quit(AG_Event *event)
+{
+    AG_Quit();
+}
+
+static void button_new(AG_Event *event)
+{
+    playing = 0;
+
+    AG_Window * win = AG_WindowNew(AG_WINDOW_MODAL);
+    AG_WindowSetSpacing(win, AG_WINDOW_CENTER);
+
+    AG_WindowSetCaption(win, "New game");
+    AG_WindowShow(win);
+
+    fill_board(current_board);
+    create_wordlist(current_board);
+    boogle_start_game(current_board);
+    print_board(current_board);
 }
 
 void boggle_start_ihm(board_t * b)
@@ -99,7 +138,7 @@ void boggle_start_ihm(board_t * b)
 	fprintf(stderr, "%s\n", AG_GetError());
 	return;
     }
-    if (AG_InitVideo(640, 460, 32, 
+    if (AG_InitVideo(MAIN_WIN_SIZE_X, MAIN_WIN_SIZE_Y, 32, 
 		     SDL_SWSURFACE | 
 		     SDL_DOUBLEBUF
 	    ) == -1)
@@ -110,27 +149,27 @@ void boggle_start_ihm(board_t * b)
 
     screen = agView->v;
 
-    AG_ColorsLoad();
+    AG_ColorsLoad(RES_COLORS);
 
-    AG_Window *win;
+    AG_Window *win, *win_cmd, *win_score;
+
     win = AG_WindowNew(
-	AG_WINDOW_NOTITLE | 
+	AG_WINDOW_NOTITLE |
 	AG_WINDOW_NOBORDERS
 	//AG_WINDOW_NOCLOSE |
 	//AG_WINDOW_NOMINIMIZE |
 	//AG_WINDOW_NOMAXIMIZE
 	);
-    AG_WindowSetCaption(win, "Information");
     AG_WindowSetGeometry(win, 
-			 640 - 200, 0,
-			 200, 300);
+			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, CMD_WIN_SIZE_Y,
+			 FOUND_WIN_SIZE_X, FOUND_WIN_SIZE_Y);
 
 
 
     //AG_Table * tbl = AG_TableNew(win, AG_TABLE_EXPAND);
     AG_Table * tbl = AG_TableNewPolled(win, AG_TABLE_EXPAND, update_foundtable, NULL);
     AG_TableAddCol(tbl, "Found word", "<LARGER WORD POSS>", &sort_string);
-    AG_TableAddCol(tbl, "Score", "<110>", &sort_int);
+    AG_TableAddCol(tbl, "Score", NULL, &sort_int);
     
 /*
     AG_TableBegin(tbl);
@@ -146,29 +185,35 @@ void boggle_start_ihm(board_t * b)
 
     AG_TableEnd(tbl);
 */
-
-    //AG_WindowSetPosition(win, AG_WINDOW_UPPER_RIGHT, 0);
     AG_WindowShow(win);
-    //AG_EventLoop();
-    //
-
-    //return;
-
-/*
-    if(SDL_Init(SDL_INIT_VIDEO) < 0) 
-    {
-	fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-	return;
-    }
 
 
+    win_cmd = AG_WindowNew(AG_WINDOW_NOTITLE | AG_WINDOW_NOBORDERS);
+    AG_WindowSetGeometry(win_cmd, 
+			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, 0,
+			 CMD_WIN_SIZE_X, CMD_WIN_SIZE_Y);
+    AG_VBox * vbox = AG_VBoxNew(win_cmd, AG_VBOX_HFILL | AG_BOX_HOMOGENOUS);
 
-    screen = SDL_SetVideoMode(BOARD_START_X + box_xcount(b) * BOX_SIZE_X + BOARD_RIGHT,
-			      BOARD_START_Y + box_ycount(b) * BOX_SIZE_Y + BOARD_BOTTOM,
-			      32, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    AG_ButtonNewFn(vbox, 0, "New game", &button_new, NULL);
+    AG_ButtonNewFn(vbox, 0, "Give up", &button_giveup, NULL);
+    AG_ButtonNewFn(vbox, 0, "Quit", &button_quit, NULL);
+    AG_WindowShow(win_cmd);
 
-    SDL_WM_SetCaption("Boggle", NULL);
-*/
+
+
+    win_score = AG_WindowNew(AG_WINDOW_NOTITLE | AG_WINDOW_NOBORDERS);
+    AG_WindowSetGeometry(win_score, 
+			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, CMD_WIN_SIZE_Y + FOUND_WIN_SIZE_Y,
+			 SCORE_WIN_SIZE_X, SCORE_WIN_SIZE_Y);
+    AG_Label *lbl = AG_LabelNewPolled(win_score, 0, "Time: ?\nScore: %u\nFound word: %u\nPossible word: %u",
+		      &b->score,
+		      &b->foundword->size,
+		      &b->wordlist->size);
+    AG_LabelSizeHint(lbl, 4,
+		     "Time: BLABLA\nScore: 10000\nFound word: 10000\nPossible word: 10000");
+    AG_WindowShow(win_score);
+
+
     if (screen == NULL)
     {
 	fprintf(stderr, "Unable to set %dx%d video: %s\n", screen->w, screen->h, SDL_GetError());
@@ -179,6 +224,7 @@ void boggle_start_ihm(board_t * b)
 
     init(b);
   
+    playing = 1;
     boogle_start_game(b);
     changed = 1;
     
@@ -244,24 +290,27 @@ void boggle_start_ihm(board_t * b)
 	    /* Send all SDL events to Agar-GUI. */
 
 	    bool processed = false;
-	    switch (ev.type) 
+	    if(playing)
 	    {
-	    case SDL_KEYUP:
-	      {
-		  int key = ev.key.keysym.sym;
-		  
-		  if(key == SDLK_ESCAPE)
-		      stop = 1;
-		  else if((key >= SDLK_a && key <= SDLK_z) ||
-			  key == SDLK_RETURN ||
-			  key == SDLK_BACKSPACE)
-		  {
-		      boggle_highlight(b, key);
-		      changed = 1;
-		      processed = true;
-		  }
-	      }
-	      break;
+		switch(ev.type) 
+		{
+		case SDL_KEYUP:
+		{
+		    int key = ev.key.keysym.sym;
+		    
+		    if(key == SDLK_ESCAPE)
+			stop = 1;
+		    else if((key >= SDLK_a && key <= SDLK_z) ||
+			    key == SDLK_RETURN ||
+			    key == SDLK_BACKSPACE)
+		    {
+			boggle_highlight(b, key);
+			changed = 1;
+			processed = true;
+		    }
+		}
+		break;
+		}
 	    }
 
 	    if(!processed)
