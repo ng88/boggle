@@ -140,6 +140,7 @@ int thread_create_game(void* d)
 
     AG_WindowHide(win_wait);
 
+    changed = 1;
     playing = 1;
 
     return 0;
@@ -147,6 +148,7 @@ int thread_create_game(void* d)
 
 static void button_new_valid(AG_Event *event)
 {
+
     AG_WindowHide(win_new);
     AG_WindowShow(win_wait);
 
@@ -291,8 +293,8 @@ void boggle_start_ihm(board_t * b)
     AG_HBox * hbox = AG_HBoxNew(win_new, AG_HBOX_HFILL | AG_BOX_HOMOGENOUS);
 
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
-    AG_ButtonNewFn(hbox, 0, "OK", &button_new_valid, "");
-    AG_ButtonNewFn(hbox, 0, "Cancel", &button_new_cancel, "");
+    AG_ButtonNewFn(hbox, 0, "OK", &button_new_valid, "%p", com);
+    AG_ButtonNewFn(hbox, 0, "Cancel", &button_new_cancel, NULL);
     AG_SpacerNew(hbox, AG_SEPARATOR_HORIZ);
 
 
