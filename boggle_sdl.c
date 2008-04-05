@@ -9,6 +9,9 @@
 # include "SDL/SDL.h"
 #endif
 
+#include <agar/core.h>
+#include <agar/gui.h>
+
 #include "sdl_draw.h"
 
 #define RES_BOXES "images/carre.bmp"
@@ -44,9 +47,63 @@ static SDL_Surface *boxes;
 void render(board_t * b);
 void init(board_t * b);
 
+
+board_t * bb;
+void test(AG_Event *event)
+{
+    render(bb);
+    printf("salut\n");
+}
+
 void boggle_start_ihm(board_t * b)
 {
 
+    if (AG_InitCore("Boggle", 0) == -1) {
+	fprintf(stderr, "%s\n", AG_GetError());
+	return;
+    }
+    if (AG_InitVideo(640, 460, 32, AG_VIDEO_RESIZABLE) == -1) {
+	fprintf(stderr, "%s\n", AG_GetError());
+	return;
+    }
+
+    screen = agView->v;
+
+    AG_Window *win;
+    win = AG_WindowNew(0);
+    AG_WindowSetCaption(win, "Information");
+    AG_WindowSetGeometry(win, 
+			 640 - 200, 0,
+			 200, 300);
+
+
+
+    AG_Table * tbl = AG_TableNew(win, AG_TABLE_EXPAND);
+    AG_TableAddCol(tbl, "Found word", "<LARGER WORD POSS>", NULL);
+    AG_TableAddCol(tbl, "Score", "<110>", NULL);
+    
+    AG_TableBegin(tbl);
+
+    int i;
+    for(i = 0; i < vector_size(b->wordlist); ++i)
+    {
+	char * w = (char*)vector_get_element_at(b->wordlist, i);
+	AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
+    }
+
+
+
+    AG_TableEnd(tbl);
+
+
+    //AG_WindowSetPosition(win, AG_WINDOW_UPPER_RIGHT, 0);
+    AG_WindowShow(win);
+    //AG_EventLoop();
+    //
+
+    //return;
+
+/*
     if(SDL_Init(SDL_INIT_VIDEO) < 0) 
     {
 	fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
@@ -60,59 +117,131 @@ void boggle_start_ihm(board_t * b)
 			      32, SDL_SWSURFACE | SDL_DOUBLEBUF);
 
     SDL_WM_SetCaption("Boggle", NULL);
-
+*/
     if (screen == NULL)
     {
 	fprintf(stderr, "Unable to set %dx%d video: %s\n", screen->w, screen->h, SDL_GetError());
 	return;
     }
- 
+
+    AG_BindGlobalKey(SDLK_ESCAPE, KMOD_NONE, AG_Quit);
+
     init(b);
+    bb=b;
+  
 
     boogle_start_game(b);
 
+
     changed = 1;
     
+
+    extern struct ag_objectq agTimeoutObjQ;
+    SDL_Event ev;
+    Uint32 Tr1 = SDL_GetTicks(), Tr2 = 0;
+ 
     while(!stop)
     {
+	render(b);
+	Tr2 = SDL_GetTicks();
+	if(Tr2-Tr1 >= agView->rNom)
+	{		/* Time to redraw? */
+	    AG_LockVFS(agView);
 
-	SDL_Event event;
-	while (SDL_PollEvent(&event)) 
+	    /*
+	     * Render the GUI windows and generate a list of
+	     * dirty rectangles.
+	     */
+	    AG_TAILQ_FOREACH(win, &agView->windows, windows)
+	    {
+		AG_ObjectLock(win);
+		if(!win->visible)
+		{
+		    AG_ObjectUnlock(win);
+		    continue;
+		}
+
+		AG_WidgetDraw(win);
+		if(!(win->flags & AG_WINDOW_NOUPDATERECT))
+		{
+		    AG_QueueVideoUpdate(
+			AGWIDGET(win)->x, AGWIDGET(win)->y,
+			AGWIDGET(win)->w, AGWIDGET(win)->h);
+		}
+		AG_ObjectUnlock(win);
+	    }
+
+	    /*
+	     * Update the dirty rectangles..
+	     */
+	    if (agView->ndirty > 0)
+	    {
+
+		SDL_UpdateRects(agView->v,
+				agView->ndirty,
+				agView->dirty);
+		
+		agView->ndirty = 0;
+	    }
+	    AG_UnlockVFS(agView);
+ 
+	    /* Recalibrate the effective refresh rate. */
+	    Tr1 = SDL_GetTicks();
+	    agView->rCur = agView->rNom - (Tr1-Tr2);
+	    if (agView->rCur < 1)
+		agView->rCur = 1;
+	    
+	}
+	else if (SDL_PollEvent(&ev) != 0)
 	{
-	    switch (event.type) 
+	    /* Send all SDL events to Agar-GUI. */
+
+	    bool processed = false;
+	    switch (ev.type) 
 	    {
 	    case SDL_KEYUP:
+	      {
+		  int key = ev.key.keysym.sym;
+		  
+		  if(key == SDLK_ESCAPE)
+		      stop = 1;
+		  else if((key >= SDLK_a && key <= SDLK_z) ||
+			  key == SDLK_RETURN ||
+			  key == SDLK_BACKSPACE)
+		  {
+		      boggle_highlight(b, key);
+		      changed = 1;
+		      processed = true;
+		  }
+	      }
+	      break;
+	    }
+
+	    if(!processed)
 	    {
-		int key = event.key.keysym.sym;
+		changed = 1;
+		AG_ProcessEvent(&ev);
+	    }
 
-		if(key == SDLK_ESCAPE)
-		    stop = 1;
-		else if((key >= SDLK_a && key <= SDLK_z) ||
-			 key == SDLK_RETURN ||
-	  		 key == SDLK_BACKSPACE)
-		{
-		    boggle_highlight(b, key);
-		    changed = 1;
-		}
-	    }
-	    break;
-	    case SDL_MOUSEMOTION:
-		break;
-	    case SDL_MOUSEBUTTONDOWN:
-		break;
-	    case SDL_QUIT:
-		stop = 1;
-		break;
-	    }
 	}
-
-	render(b);
+	else if (AG_TAILQ_FIRST(&agTimeoutObjQ) != NULL)
+	{
+	    /* Advance the timing wheels. */
+	    AG_ProcessTimeout(Tr2);
+	}
+	else if (agView->rCur > agIdleThresh)
+	{
+	    /* Idle the rest of the time. */
+	    SDL_Delay(agView->rCur - agIdleThresh);
+	}
     }
+
 
     SDL_FreeSurface(font);
     SDL_FreeSurface(font2);
     SDL_FreeSurface(boxes);
     SDL_FreeSurface(screen);
+    AG_Destroy();
     SDL_Quit();
 }
 
