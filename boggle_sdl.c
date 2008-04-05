@@ -14,10 +14,11 @@
 
 #include "sdl_draw.h"
 
-#define RES_BOXES "images/carre.bmp"
-#define RES_FONT "images/font1.bmp"
-#define RES_FONT2 "images/font2.bmp"
+#define RES_BOXES "res/carre.bmp"
+#define RES_FONT "res/font1.bmp"
+#define RES_FONT2 "res/font2.bmp"
 #define RES_SEL "res/selecteur.bmp"
+#define RES_COLOR "res/color.acs"
 
 #define BGCOLOR 0xffffff
 
@@ -45,8 +46,8 @@ static SDL_Surface *font2;
 static SDL_Surface *boxes;
 static board_t * current_board;
 
-void render(board_t * b);
-void init(board_t * b);
+void render();
+void init();
 
 static int sort_string(const void *p1, const void *p2)
 {
@@ -74,13 +75,14 @@ static void update_foundtable(AG_Event *event)
 	AG_Table * tbl = AG_SELF();
 	AG_TableBegin(tbl);
 
-	int i;
+	size_t i;
 	for(i = 0; i < last_size; ++i)
 	{
 	    char * w = (char*)vector_get_element_at(current_board->foundword, i);
 	    AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
 	}
- 
+	AG_TableAddRow(tbl, "%s:%d", "Total:", current_board->score);
+
 	AG_TableEnd(tbl);
 
 	printf("maj %d\n", rand());
@@ -108,8 +110,16 @@ void boggle_start_ihm(board_t * b)
 
     screen = agView->v;
 
+    AG_ColorsLoad();
+
     AG_Window *win;
-    win = AG_WindowNew(0);
+    win = AG_WindowNew(
+	AG_WINDOW_NOTITLE | 
+	AG_WINDOW_NOBORDERS
+	//AG_WINDOW_NOCLOSE |
+	//AG_WINDOW_NOMINIMIZE |
+	//AG_WINDOW_NOMAXIMIZE
+	);
     AG_WindowSetCaption(win, "Information");
     AG_WindowSetGeometry(win, 
 			 640 - 200, 0,
@@ -282,7 +292,7 @@ void boggle_start_ihm(board_t * b)
     SDL_Quit();
 }
 
-void init(board_t * b)
+void init()
 {
     /* on charge les case */
     SDL_Surface *temp = SDL_LoadBMP(RES_BOXES);
@@ -311,7 +321,7 @@ void init(board_t * b)
 
 }
 
-void render(board_t * b)
+void render()
 {
 
     if(!changed)
@@ -326,21 +336,21 @@ void render(board_t * b)
     size_t x, y;
     
     /* on trace le plateau */
-    for(x = 0; x < box_xcount(b); ++x)
-	for(y = 0; y < box_ycount(b); ++y)
+    for(x = 0; x < box_xcount(current_board); ++x)
+	for(y = 0; y < box_ycount(current_board); ++y)
 	{
 
 	    int xx = x * BOX_SIZE_X + BOARD_START_X;
 	    int yy = y * BOX_SIZE_Y + BOARD_START_Y;
 
 	    draw_tile2(screen, boxes,
-		       0, get_flag(b, x, y),
+		       0, get_flag(current_board, x, y),
 		       BOX_SIZE_Y,
 		       BOX_SIZE_X,
 		       xx, yy);
 
 	    draw_smooth_transparent_tile(screen, font,
-					 get_box(b, x, y) - LETTER_FIRST,
+					 get_box(current_board, x, y) - LETTER_FIRST,
 					 FONT_SIZE_Y,
 					 FONT_SIZE_X,
 					 xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,
@@ -349,7 +359,7 @@ void render(board_t * b)
 	}
 
     draw_rect(screen, 10, screen->h - font2->w - 8, screen->w, font2->w,  BGCOLOR);
-    draw_string(screen, font2, 10, screen->h - font2->w - 8, b->current);
+    draw_string(screen, font2, 10, screen->h - font2->w - 8, current_board->current);
 
 
      if(SDL_MUSTLOCK(screen)) 
