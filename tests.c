@@ -6,7 +6,7 @@
 
 int main()
 {
-    dico_t * dico  = open_dico("dico_english.txt");
+    dico_t * dico  = open_dico("english1.txt");
 
     board_t * b = boggle_create_board(dico, 7);
 
@@ -22,7 +22,7 @@ int main2(int argc, char ** argv)
 {
 
 
-    dico_t * d  = open_dico("dico_english.txt");
+    dico_t * d  = open_dico("english1.txt");
     //dico_t * d  = open_dico("d.txt");
 
 

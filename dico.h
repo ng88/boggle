@@ -22,7 +22,7 @@ typedef enum
 typedef struct
 {
     FILE * stream;
-    long letter_pos[LETTER_COUNT][LETTER_COUNT];
+    long letter_pos[LETTER_COUNT][LETTER_COUNT][LETTER_COUNT];
     long end;
 } dico_t;
 
