@@ -575,7 +575,7 @@ void render()
 					 BGCOLOR, 0.70);
 	}
 
-    draw_rect(screen, 10, screen->h - font2->w - 8, screen->w, font2->w,  BGCOLOR);
+    draw_rect(screen, 10, screen->h - font2->w - 8, screen->w - FOUND_WIN_SIZE_X, font2->w,  BGCOLOR);
     draw_string(screen, font2, 10, screen->h - font2->w - 8, current_board->current);
 
 
