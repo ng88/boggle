@@ -8,6 +8,8 @@
 
 typedef void* vector_elt_t;
 
+typedef int (*sort_fn_t)(vector_elt_t, vector_elt_t);
+
 typedef struct
 {
     vector_elt_t * table;
@@ -26,6 +28,13 @@ void vector_add_element_first(vector_t * v, vector_elt_t e);
 
 size_t vector_size(vector_t * v);
 size_t vector_capacity(vector_t * v);
+
+/** Perform a quick sort on v.
+    fn must return a negative number if a < b
+                   a positive number if a > b
+                   0 if a == b
+ */
+void vector_sort(vector_t * v, sort_fn_t fn);
 
 
 void clear_vector(vector_t * v, int free_elt);

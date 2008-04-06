@@ -188,6 +188,12 @@ void boggle_search_word(board_t * b, size_t i, size_t j)
     }
 }
 
+int sort_by_score(void * a, void * b)
+{
+    return boggle_score_for_word((char*)b) -
+	boggle_score_for_word((char*)a);
+}
+
 void boggle_create_wordlist(board_t * b)
 {
     c_assert(b);
@@ -216,6 +222,9 @@ void boggle_create_wordlist(board_t * b)
 	    }
 	}
     }
+
+    vector_sort(b->wordlist, &sort_by_score);
+
 }
 
 void boggle_start_game(board_t * b)
