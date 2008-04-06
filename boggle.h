@@ -99,8 +99,10 @@ void boggle_highlight(board_t * b, char letter);
 
 bool boggle_highlight_path(board_t * b);
 
-void boggle_resize_board(board_t * b, size_t s);
+void boggle_highlight_fullword(board_t * b, char * w);
 
+
+void boggle_resize_board(board_t * b, size_t s);
 
 void boggle_search_word(board_t * b, size_t i, size_t j);
 

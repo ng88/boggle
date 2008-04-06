@@ -431,3 +431,19 @@ void boggle_highlight(board_t * b, char letter)
     }
 }
 
+void boggle_highlight_fullword(board_t * b, char * w)
+{
+    c_assert(b && w);
+
+    b->current_size = strlen(w);
+
+    if(b->current_size >= 2)
+    {
+	size_t i;
+	for(i = 0; i <= b->current_size; ++i)
+	    b->current[i] = w[i];
+
+	boggle_highlight_path(b);
+    }
+
+}

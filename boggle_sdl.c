@@ -134,6 +134,13 @@ static void board_size_changed(AG_Event *event)
 
 static void button_giveup(AG_Event *event)
 {
+
+    if(playing != GP_PLAYING)
+    {
+	AG_TextMsg(AG_MSG_ERROR, "No game in progress!");
+	return;
+    }
+
     playing = GP_WATCHING_SOLUTION;
     show_solution();
 }
@@ -180,6 +187,14 @@ static void button_new(AG_Event *event)
     playing = GP_NOT_PLAYING;
     AG_WindowShow(win_new);
 
+}
+
+static void tbl_solution_click(AG_Event *event)
+{
+    int i = AG_INT(1);
+    boggle_highlight_fullword(current_board, 
+			      (char*)vector_get_element_at(current_board->wordlist, i));
+    changed = 1;
 }
 
 void show_solution()
@@ -266,6 +281,7 @@ void boggle_start_ihm(board_t * b)
     tbl_solution = AG_TableNew(tab_solution, AG_TABLE_EXPAND);	
     AG_TableAddCol(tbl_solution, "Word", "<LARGER WORD POSS>", &sort_string);
     AG_TableAddCol(tbl_solution, "Score", NULL, &sort_int);
+    AG_TableSetRowDblClickFn(tbl_solution, &tbl_solution_click, NULL);
 
     AG_WindowShow(win);
 
