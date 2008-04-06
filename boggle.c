@@ -313,7 +313,7 @@ score_t boggle_score_for_word(char * word)
     }
 }
 
-ans_t boggle_word_is_valid(board_t * b, char * word)
+bool boggle_word_is_valid(board_t * b, char * word)
 {
     c_assert(b && word);
 
@@ -321,27 +321,11 @@ ans_t boggle_word_is_valid(board_t * b, char * word)
 
     for(i = 0; i < vector_size(b->wordlist); ++i)
     {
-	char * s1 = (char*)vector_get_element_at(b->wordlist, i);
-	char * s2 = word;
-
-	while(*s1 != '\0' && *s2 != '\0'  && *s1 == *s2)
-	{
-	    s1++;
-	    s2++;
-	}
-
-	if(*s2 == '\0') /* we get at the 
-		       end of the input word*/
-	{
-	    if(*s1 == '\0') /* we get at the
-			    end of the dico word*/
-		return A_PEFECT_MATCH;
-	    else
-		return A_BEGIN_MATCH;
-	}
+	if(!strcmp((char*)vector_get_element_at(b->wordlist, i), word))
+	    return true;
     }
 
-    return A_NOT_FOUND;
+    return false;
 }
 
 bool boggle_highlight_path_next(board_t * b, size_t i, size_t j, size_t pos)
@@ -418,7 +402,7 @@ void boggle_highlight(board_t * b, char letter)
     }
     else if(letter == KEY_RETURN)
     {
-	if(boggle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
+	if(boggle_word_is_valid(b, b->current))
 	{
 	    size_t old = vector_size(b->foundword);
 

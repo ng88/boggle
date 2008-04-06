@@ -90,7 +90,7 @@ void boggle_start_ihm(board_t * b);
 
 void boggle_reset_flags(board_t * b);
 
-ans_t boggle_word_is_valid(board_t * b, char * word);
+bool boggle_word_is_valid(board_t * b, char * word);
 
 /** highlight letter 'letter' if it matches a word in the grid.
     letter can be [a-z], backspace or return.
