@@ -61,6 +61,8 @@
 #define NORMAL_FPS 30
 #define MINIMAL_FPS 2
 
+enum { GP_NOT_PLAYING = 0, GP_PLAYING = 1, GP_WATCHING_SOLUTION = 2 };
+
 static volatile int stop;
 static volatile int changed;
 static volatile int playing;
@@ -72,12 +74,18 @@ static SDL_Surface *boxes;
 static board_t * current_board;
 static AG_Window * win_new;
 static AG_Window * win_wait;
+static AG_Table * tbl_solution;
+static AG_Notebook * tabs;
+static AG_NotebookTab * tab_solution;
+static AG_NotebookTab * tab_user;
 static SDL_Thread * thread = NULL;
-static volatile int new_board_size = -1;
+static volatile int new_board_size = 4;
 
 void render();
 void init();
 void do_events();
+void show_solution();
+int thread_create_game(void* d);
 
 static int sort_string(const void *p1, const void *p2)
 {
@@ -109,7 +117,7 @@ static void update_foundtable(AG_Event *event)
 	for(i = 0; i < last_size; ++i)
 	{
 	    char * w = (char*)vector_get_element_at(current_board->foundword, i);
-	    AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
+	    AG_TableAddRow(tbl, "%s:%d", w, boggle_score_for_word(w));
 	}
 	//AG_TableAddRow(tbl, "%s:%d", "Total:", current_board->score);
 
@@ -126,7 +134,8 @@ static void board_size_changed(AG_Event *event)
 
 static void button_giveup(AG_Event *event)
 {
-
+    playing = GP_WATCHING_SOLUTION;
+    show_solution();
 }
 
 static void button_quit(AG_Event *event)
@@ -134,28 +143,6 @@ static void button_quit(AG_Event *event)
     AG_Quit();
 }
 
-
-int thread_create_game(void* d)
-{
-    AG_SetRefreshRate(MINIMAL_FPS);
-
-    boggle_resize_board(current_board, new_board_size);
-    fill_board(current_board);
-    create_wordlist(current_board);
-    boogle_start_game(current_board);
-    print_board(current_board);
-
-    draw_rect(screen, 0, 0, screen->w, screen->h, BGCOLOR);
-
-    AG_SetRefreshRate(NORMAL_FPS);
-
-    AG_WindowHide(win_wait);
-
-    changed = 1;
-    playing = 1;
-
-    return 0;
-}
 
 static void button_new_valid(AG_Event *event)
 {
@@ -170,6 +157,9 @@ static void button_new_valid(AG_Event *event)
     AG_WindowHide(win_new);
     AG_WindowShow(win_wait);
 
+    AG_NotebookSelectTab(tabs, tab_user);
+    AG_TableBegin(tbl_solution);
+
     if(thread)
 	SDL_WaitThread(thread, NULL);
 
@@ -181,15 +171,55 @@ static void button_new_cancel(AG_Event *event)
 {
     AG_WindowHide(win_new);
     playing = old_playing;
+    changed = 1;
 }
 
 static void button_new(AG_Event *event)
 {
     old_playing = playing;
-    playing = 0;
+    playing = GP_NOT_PLAYING;
     AG_WindowShow(win_new);
 
 }
+
+void show_solution()
+{
+    AG_TableBegin(tbl_solution);
+
+    size_t i;
+    for(i = 0; i < vector_size(current_board->wordlist); ++i)
+    {
+	char * w = (char*)vector_get_element_at(current_board->wordlist, i);
+	AG_TableAddRow(tbl_solution, "%s:%d", w, boggle_score_for_word(w));
+    }
+
+    AG_TableEnd(tbl_solution);
+
+    AG_NotebookSelectTab(tabs, tab_solution);
+}
+
+int thread_create_game(void * d)
+{
+    AG_SetRefreshRate(MINIMAL_FPS);
+
+    boggle_resize_board(current_board, new_board_size);
+    boggle_fill_board(current_board);
+    boggle_create_wordlist(current_board);
+    boggle_start_game(current_board);
+    boggle_print_board(current_board);
+
+    draw_rect(screen, 0, 0, screen->w, screen->h, BGCOLOR);
+
+    AG_SetRefreshRate(NORMAL_FPS);
+
+    AG_WindowHide(win_wait);
+
+    changed = 1;
+    playing = GP_PLAYING;
+
+    return 0;
+}
+
 
 void boggle_start_ihm(board_t * b)
 {
@@ -225,26 +255,18 @@ void boggle_start_ihm(board_t * b)
 			 FOUND_WIN_SIZE_X, FOUND_WIN_SIZE_Y);
 
 
+    tabs = AG_NotebookNew(win, AG_NOTEBOOK_EXPAND);
+    tab_user = AG_NotebookAddTab(tabs, "Found word", AG_BOX_VERT);
 
-    //AG_Table * tbl = AG_TableNew(win, AG_TABLE_EXPAND);
-    AG_Table * tbl = AG_TableNewPolled(win, AG_TABLE_EXPAND, update_foundtable, NULL);
-    AG_TableAddCol(tbl, "Found word", "<LARGER WORD POSS>", &sort_string);
+    AG_Table * tbl = AG_TableNewPolled(tab_user, AG_TABLE_EXPAND, update_foundtable, NULL);
+    AG_TableAddCol(tbl, "Word", "<LARGER WORD POSS>", &sort_string);
     AG_TableAddCol(tbl, "Score", NULL, &sort_int);
-    
-/*
-    AG_TableBegin(tbl);
 
-    int i;
-    for(i = 0; i < vector_size(b->wordlist); ++i)
-    {
-	char * w = (char*)vector_get_element_at(b->wordlist, i);
-	AG_TableAddRow(tbl, "%s:%d", w, score_for_word(w));
-    }
+    tab_solution = AG_NotebookAddTab(tabs, "Solution", AG_BOX_VERT);
+    tbl_solution = AG_TableNew(tab_solution, AG_TABLE_EXPAND);	
+    AG_TableAddCol(tbl_solution, "Word", "<LARGER WORD POSS>", &sort_string);
+    AG_TableAddCol(tbl_solution, "Score", NULL, &sort_int);
 
-
-
-    AG_TableEnd(tbl);
-*/
     AG_WindowShow(win);
 
 
@@ -297,13 +319,20 @@ void boggle_start_ihm(board_t * b)
 
     int i;
     for (i = 2; i <= 7; i++)
-	AG_TlistAdd(com->list, NULL, "%d x %d", i, i)->p1 = (void*)i;
+    {
+	AG_TlistItem * item = AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
+	item->p1 = (void*)i;
+	if(i == new_board_size)
+	    AG_ComboSelect(com, item);
+    }
 
 
     com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Time: ");
     AG_ComboSizeHint(com, "10 minutes", 11);
 
-    AG_TlistAdd(com->list, NULL, "unlimited", i, i);
+    AG_ComboSelect(com, AG_TlistAdd(com->list, NULL, "unlimited", i, i));
+
+
 
     for (i = 1; i <= 10; i++)
 	AG_TlistAdd(com->list, NULL, "%d minutes", i, i);
@@ -342,7 +371,7 @@ void boggle_start_ihm(board_t * b)
 
     init(b);
   
-    playing = 0;
+    playing = GP_NOT_PLAYING;
     changed = 1;
 
     extern struct ag_objectq agTimeoutObjQ;
@@ -409,7 +438,7 @@ void boggle_start_ihm(board_t * b)
 	    /* Send all SDL events to Agar-GUI. */
 
 	    bool processed = false;
-	    if(playing)
+	    if(playing == GP_PLAYING)
 	    {
 		switch(ev.type) 
 		{
@@ -508,21 +537,21 @@ void render()
     size_t x, y;
     
     /* on trace le plateau */
-    for(x = 0; x < box_xcount(current_board); ++x)
-	for(y = 0; y < box_ycount(current_board); ++y)
+    for(x = 0; x < boggle_box_xcount(current_board); ++x)
+	for(y = 0; y < boggle_box_ycount(current_board); ++y)
 	{
 
 	    int xx = x * BOX_SIZE_X + BOARD_START_X;
 	    int yy = y * BOX_SIZE_Y + BOARD_START_Y;
 
 	    draw_tile2(screen, boxes,
-		       0, get_flag(current_board, x, y),
+		       0, boggle_get_flag(current_board, x, y),
 		       BOX_SIZE_Y,
 		       BOX_SIZE_X,
 		       xx, yy);
 
 	    draw_smooth_transparent_tile(screen, font,
-					 get_box(current_board, x, y) - LETTER_FIRST,
+					 boggle_get_box(current_board, x, y) - LETTER_FIRST,
 					 FONT_SIZE_Y,
 					 FONT_SIZE_X,
 					 xx + BOX_SIZE_X / 2 - FONT_SIZE_X / 2,

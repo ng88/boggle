@@ -8,11 +8,11 @@ int main()
 {
     dico_t * dico  = open_dico("dico_english.txt");
 
-    board_t * b = create_board(dico, 4);
+    board_t * b = boggle_create_board(dico, 7);
 
     boggle_start_ihm(b);
 
-    free_board(b);
+    boggle_free_board(b);
     close_dico(dico);
 
     return EXIT_SUCCESS;

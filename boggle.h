@@ -54,42 +54,43 @@ typedef struct
 } board_t;
 
 
-#define get_box(b, i, j)       ((b)->cs[i][j])
-#define set_box(b, i, j, v)    ((b)->cs[i][j] = (v))
-#define get_flag(b, i, j)      ((b)->fl[i][j])
-#define set_flag(b, i, j, v)   ((b)->fl[i][j] = (v))
-#define box_xcount(b)          ((b)->size)
-#define box_ycount(b)          box_xcount(b)
-#define box_count(b)           (box_xcount(b) * box_ycount(b))
-#define board_score(b)         ((b)->score)
+#define boggle_get_box(b, i, j)       ((b)->cs[i][j])
+#define boggle_set_box(b, i, j, v)    ((b)->cs[i][j] = (v))
+#define boggle_get_flag(b, i, j)      ((b)->fl[i][j])
+#define boggle_set_flag(b, i, j, v)   ((b)->fl[i][j] = (v))
+#define boggle_box_xcount(b)          ((b)->size)
+#define boggle_box_ycount(b)          boggle_box_xcount(b)
+#define boggle_box_count(b)           (boggle_box_xcount(b) * boggle_box_ycount(b))
+#define boggle_board_score(b)         ((b)->score)
 
 /** return non zero if (i, j) is a valid position */
-#define is_valid_pos(b, i, j) \
-       ((i) < box_xcount(b) && (j) < box_ycount(b))
+#define boggle_is_valid_pos(b, i, j) \
+       ((i) < boggle_box_xcount(b) && (j) < boggle_box_ycount(b))
 
 /** return non zero if d is a valid direction at (i, j) */
-#define is_valid_dir(b, i, j, d) \
-        is_valid_pos((b), (i) + dx[d], (j) + dy[d])
+#define boggle_is_valid_dir(b, i, j, d) \
+        boggle_is_valid_pos((b), (i) + dx[d], (j) + dy[d])
 
-board_t * create_board(dico_t * dico, size_t s);
+board_t * boggle_create_board(dico_t * dico, size_t s);
 
-void fill_board(board_t * b);
+void boggle_fill_board(board_t * b);
 
-void create_wordlist(board_t * b);
+void boggle_create_wordlist(board_t * b);
 
-void boogle_start_game(board_t * b);
+void boggle_start_game(board_t * b);
 
-void free_board(board_t * b);
+void boggle_free_board(board_t * b);
 
-void print_board(board_t *b);
+void boggle_print_current(board_t * b);
+void boggle_print_board(board_t *b);
 
-score_t score_for_word(char * word);
+score_t boggle_score_for_word(char * word);
 
 void boggle_start_ihm(board_t * b);
 
 void boggle_reset_flags(board_t * b);
 
-ans_t boogle_word_is_valid(board_t * b, char * word);
+ans_t boggle_word_is_valid(board_t * b, char * word);
 
 /** highlight letter 'letter' if it matches a word in the grid.
     letter can be [a-z], backspace or return.
@@ -99,5 +100,10 @@ void boggle_highlight(board_t * b, char letter);
 bool boggle_highlight_path(board_t * b);
 
 void boggle_resize_board(board_t * b, size_t s);
+
+
+void boggle_search_word(board_t * b, size_t i, size_t j);
+
+void add_unique_word_to_list(vector_t * list, char * word);
 
 #endif

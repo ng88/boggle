@@ -24,17 +24,9 @@ const char vowel[VOWEL_COUNT] = {'a', 'e', 'i', 'o', 'u', 'y'};
 
 */
 
-
-board_t * create_board(dico_t * dico, size_t s)
+void boggle_alloc_boards(board_t * b, size_t s)
 {
-    board_t * b = (board_t *)malloc(sizeof(*b));
-    c_assert2(b, "malloc failed");
-
     b->size = s;
-    b->wordlist = create_vector(16);
-    b->foundword = create_vector(8);
-    b->score = 0;
-    b->dico = dico;
 
     b->cs = (box_t**)malloc(sizeof(box_t*) * s);
     c_assert2(b->cs, "malloc failed");
@@ -53,7 +45,33 @@ board_t * create_board(dico_t * dico, size_t s)
 	c_assert2(b->fl[i], "malloc failed");
 
     }
+}
 
+void boggle_free_boards(board_t * b)
+{
+    size_t i;
+    for(i = 0; i < b->size; ++i)
+    {
+	free(b->cs[i]);
+	free(b->fl[i]);
+    }
+    
+    free(b->cs);
+    free(b->fl);
+}
+
+board_t * boggle_create_board(dico_t * dico, size_t s)
+{
+    board_t * b = (board_t *)malloc(sizeof(*b));
+    c_assert2(b, "malloc failed");
+
+    
+    b->wordlist = create_vector(16);
+    b->foundword = create_vector(8);
+    b->score = 0;
+    b->dico = dico;
+
+    boggle_alloc_boards(b, s);
 
     return b;
 }
@@ -66,39 +84,13 @@ void boggle_resize_board(board_t * b, size_t s)
 	b->size = s;
     else
     {
-	size_t i;
-	for(i = 0; i < b->size; ++i)
-	{
-	    free(b->cs[i]);
-	    free(b->fl[i]);
-	}
-	
-	free(b->cs);
-	free(b->fl);
-
-	b->cs = (box_t**)malloc(sizeof(box_t*) * s);
-	c_assert2(b->cs, "malloc failed");
-
-	b->fl = (box_t**)malloc(sizeof(box_t*) * s);
-	c_assert2(b->fl, "malloc failed");
-
-	b->size = s;
-
-	for(i = 0; i < s; ++i)
-	{
-	    b->cs[i] = (box_t*)malloc(sizeof(box_t) * s);
-	    c_assert2(b->cs[i], "malloc failed");
-	    
-	    b->fl[i] = (box_t*)malloc(sizeof(box_t) * s);
-	    c_assert2(b->fl[i], "malloc failed");
-	    
-	}
-
+	boggle_free_boards(b);
+	boggle_alloc_boards(b, s);
     }
 }
 
 
-void fill_board(board_t * b)
+void boggle_fill_board(board_t * b)
 {
     static bool init = false;
     if(!init)
@@ -111,9 +103,9 @@ void fill_board(board_t * b)
     c_assert(b);
     size_t i, j;
 
-    for(i = 0; i < box_xcount(b); ++i)
+    for(i = 0; i < boggle_box_xcount(b); ++i)
     {
-	for(j = 0; j < box_ycount(b); ++j)
+	for(j = 0; j < boggle_box_ycount(b); ++j)
 	{
 	    char letter;
 
@@ -122,7 +114,7 @@ void fill_board(board_t * b)
 	    else
 		letter = LETTER_FIRST + (int)((double)(LETTER_LAST - LETTER_FIRST) * (rand() / (double)RAND_MAX));
 
-	    set_box(b, i, j, letter);
+	    boggle_set_box(b, i, j, letter);
 	}
     }
 
@@ -146,7 +138,7 @@ void add_unique_word_to_list(vector_t * list, char * word)
 
 }
 
-void print_current(board_t * b)
+void boggle_print_current(board_t * b)
 {
     size_t i;
     for(i = 0; i < b->current_size; ++i)
@@ -155,7 +147,7 @@ void print_current(board_t * b)
     putchar('\n');
 }
 
-void search_word(board_t * b, size_t i, size_t j)
+void boggle_search_word(board_t * b, size_t i, size_t j)
 {
     size_t d;
 
@@ -183,19 +175,20 @@ void search_word(board_t * b, size_t i, size_t j)
 
     for(d = 0; d < D_COUNT; ++d)
     {
-	if(is_valid_dir(b, i, j, d) && get_flag(b, i, j) == FL_FREE)
+	if(boggle_is_valid_dir(b, i, j, d) &&
+	   boggle_get_flag(b, i, j) == FL_FREE)
 	{
-	    b->current[b->current_size] = get_box(b, i, j);
+	    b->current[b->current_size] = boggle_get_box(b, i, j);
 	    b->current_size++;
-	    set_flag(b, i, j, FL_BUSY);
-	    search_word(b, i + dx[d], j + dy[d]);
-	    set_flag(b, i, j, FL_FREE);
+	    boggle_set_flag(b, i, j, FL_BUSY);
+	    boggle_search_word(b, i + dx[d], j + dy[d]);
+	    boggle_set_flag(b, i, j, FL_FREE);
 	    b->current_size--;
 	}
     }
 }
 
-void create_wordlist(board_t * b)
+void boggle_create_wordlist(board_t * b)
 {
     c_assert(b);
     size_t i, j, d;
@@ -205,26 +198,27 @@ void create_wordlist(board_t * b)
     b->current_size = 1;
     boggle_reset_flags(b);
 
-    for(i = 0; i < box_xcount(b); ++i)
+    for(i = 0; i < boggle_box_xcount(b); ++i)
     {
-	for(j = 0; j < box_ycount(b); ++j)
+	for(j = 0; j < boggle_box_ycount(b); ++j)
 	{
-	    b->current[0] = get_box(b, i, j);
+	    b->current[0] = boggle_get_box(b, i, j);
 
 	    for(d = 0; d < D_COUNT; ++d)
 	    {
-		if(is_valid_dir(b, i, j, d) && get_flag(b, i, j) == FL_FREE)
+		if(boggle_is_valid_dir(b, i, j, d) && 
+		   boggle_get_flag(b, i, j) == FL_FREE)
 		{
-		    set_flag(b, i, j, FL_BUSY);
-		    search_word(b, i + dx[d], j + dy[d]);
-		    set_flag(b, i, j, FL_FREE);
+		    boggle_set_flag(b, i, j, FL_BUSY);
+		    boggle_search_word(b, i + dx[d], j + dy[d]);
+		    boggle_set_flag(b, i, j, FL_FREE);
 		}
 	    }
 	}
     }
 }
 
-void boogle_start_game(board_t * b)
+void boggle_start_game(board_t * b)
 {
     c_assert(b);
 
@@ -239,55 +233,47 @@ void boggle_reset_flags(board_t * b)
 {
     size_t i, j;
 
-    for(i = 0; i < box_xcount(b); ++i)
-	for(j = 0; j < box_ycount(b); ++j)
-	    set_flag(b, i, j, FL_FREE);
+    for(i = 0; i < boggle_box_xcount(b); ++i)
+	for(j = 0; j < boggle_box_ycount(b); ++j)
+	    boggle_set_flag(b, i, j, FL_FREE);
 }
 
 
-void free_board(board_t * b)
+void boggle_free_board(board_t * b)
 {
     if(!b) return;
 
     free_vector(b->foundword, 1);
     free_vector(b->wordlist, 1);
 
-    size_t i;
-    for(i = 0; i < b->size; ++i)
-    {
-	free(b->cs[i]);
-	free(b->fl[i]);
-    }
-
-    free(b->cs);
-    free(b->fl);
+    boggle_free_boards(b);
 
     free(b);
 
 }
 
 
-void print_board(board_t *b)
+void boggle_print_board(board_t *b)
 {
     c_assert(b);
     size_t i, j;
 
     
-    for(j = 0; j < box_ycount(b); ++j)
+    for(j = 0; j < boggle_box_ycount(b); ++j)
     {
-	for(i = 0; i < box_xcount(b); ++i)
+	for(i = 0; i < boggle_box_xcount(b); ++i)
 	{
-	    printf("%c ", get_box(b, i, j));
+	    printf("%c ", boggle_get_box(b, i, j));
 	}
 	putchar('\n');
     }
 
-    printf("\nscore: %d\nfound word:\n", board_score(b));
+    printf("\nscore: %d\nfound word:\n", boggle_board_score(b));
 
     for(i = 0; i < vector_size(b->foundword); ++i)
     {
 	char * w = (char*)vector_get_element_at(b->foundword, i);
-	printf("%s (score=%d)\n", w, score_for_word(w));
+	printf("%s (score=%d)\n", w, boggle_score_for_word(w));
     }
 
     puts("\nwordlist:\n");
@@ -295,13 +281,13 @@ void print_board(board_t *b)
     for(i = 0; i < vector_size(b->wordlist); ++i)
     {
 	char * w = (char*)vector_get_element_at(b->wordlist, i);
-	printf("%s (score=%d)\n", w, score_for_word(w));
+	printf("%s (score=%d)\n", w, boggle_score_for_word(w));
     }
 
 }
 
 
-score_t score_for_word(char * word)
+score_t boggle_score_for_word(char * word)
 {
     c_assert(word);
     switch(strlen(word))
@@ -318,7 +304,7 @@ score_t score_for_word(char * word)
     }
 }
 
-ans_t boogle_word_is_valid(board_t * b, char * word)
+ans_t boggle_word_is_valid(board_t * b, char * word)
 {
     c_assert(b && word);
 
@@ -354,7 +340,7 @@ bool boggle_highlight_path_next(board_t * b, size_t i, size_t j, size_t pos)
    pos++;
    if(pos < LARGER_WORD && b->current[pos] == '\0')
    {
-       set_flag(b, i, j, FL_HIGHLIGTHED_END);
+       boggle_set_flag(b, i, j, FL_HIGHLIGTHED_END);
        return true;
    }
 
@@ -365,14 +351,14 @@ bool boggle_highlight_path_next(board_t * b, size_t i, size_t j, size_t pos)
        size_t ii = i + dx[d];
        size_t jj = j + dy[d];
 
-       if(is_valid_pos(b, ii, jj) &&
-	  get_flag(b, ii, jj) == FL_FREE &&
-	  get_box(b, ii, jj) == b->current[pos])
+       if(boggle_is_valid_pos(b, ii, jj) &&
+	  boggle_get_flag(b, ii, jj) == FL_FREE &&
+	  boggle_get_box(b, ii, jj) == b->current[pos])
        {
-	   set_flag(b, ii, jj, FL_HIGHLIGTHED);
+	   boggle_set_flag(b, ii, jj, FL_HIGHLIGTHED);
 	   if(boggle_highlight_path_next(b, ii, jj, pos))
 	       return true;
-	   set_flag(b, ii, jj, FL_FREE);
+	   boggle_set_flag(b, ii, jj, FL_FREE);
        }
    }
 
@@ -390,20 +376,20 @@ bool boggle_highlight_path(board_t * b)
     if(b->current_size == 0)
 	return true;
 
-    for(i = 0; i < box_xcount(b); ++i)
+    for(i = 0; i < boggle_box_xcount(b); ++i)
     {
-	for(j = 0; j < box_ycount(b); ++j)
+	for(j = 0; j < boggle_box_ycount(b); ++j)
 	{
-	    if( get_box(b, i, j) == b->current[0] )
+	    if( boggle_get_box(b, i, j) == b->current[0] )
 	    {
-		set_flag(b, i, j, FL_HIGHLIGTHED);
+		boggle_set_flag(b, i, j, FL_HIGHLIGTHED);
 		if(boggle_highlight_path_next(b, i, j, 0))
 		    return true;
-		set_flag(b, i, j, FL_FREE);
+		boggle_set_flag(b, i, j, FL_FREE);
 	    }
 	}
     }
-    printf("FALSE\n");
+
     return false;
 }
 
@@ -423,14 +409,14 @@ void boggle_highlight(board_t * b, char letter)
     }
     else if(letter == KEY_RETURN)
     {
-	if(boogle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
+	if(boggle_word_is_valid(b, b->current)== A_PEFECT_MATCH)
 	{
 	    size_t old = vector_size(b->foundword);
 
 	    add_unique_word_to_list(b->foundword, b->current);
 
 	    if(old < vector_size(b->foundword))
-		b->score += score_for_word(b->current);
+		b->score += boggle_score_for_word(b->current);
 
 	    b->current[0] = '\0';
 	    b->current_size = 0;
