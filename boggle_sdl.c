@@ -74,12 +74,16 @@ static SDL_Surface *boxes;
 static board_t * current_board;
 static AG_Window * win_new;
 static AG_Window * win_wait;
+static AG_Window * win_main;
 static AG_Table * tbl_solution;
 static AG_Notebook * tabs;
 static AG_NotebookTab * tab_solution;
 static AG_NotebookTab * tab_user;
 static SDL_Thread * thread = NULL;
+static int time_left_sec = 0;
+static int time_left_min = 0;
 static volatile int new_board_size = 4;
+static volatile int new_time       = 3;
 
 void render();
 void init();
@@ -130,6 +134,12 @@ static void board_size_changed(AG_Event *event)
 {
     AG_TlistItem * item = AG_PTR(1);
     new_board_size = (int)item->p1;
+}
+
+static void time_changed(AG_Event *event)
+{
+    AG_TlistItem * item = AG_PTR(1);
+    new_time = (int)item->p1;
 }
 
 static void button_giveup(AG_Event *event)
@@ -213,9 +223,41 @@ void show_solution()
     AG_NotebookSelectTab(tabs, tab_solution);
 }
 
+void timer(AG_Event *event)
+{
+    if(playing != GP_PLAYING || time_left_min == -1)
+	return;
+
+    if(time_left_sec == 0)
+    {
+	if(time_left_min == 0)
+	{
+	    AG_TextMsg(AG_MSG_INFO, "Time is up!");
+	    playing = GP_WATCHING_SOLUTION;
+	    show_solution();
+	    return;
+	}
+	
+	time_left_min--;
+	time_left_sec = 59;
+    }
+    else
+	time_left_sec--;
+
+    AG_SchedEvent(win_main, win_main, 1000, "check_time", NULL);
+}
+
 int thread_create_game(void * d)
 {
     AG_SetRefreshRate(MINIMAL_FPS);
+
+    if(new_time)
+    {
+	time_left_min = new_time;
+	time_left_sec = 0;
+    }
+    else
+	time_left_min = time_left_sec = -1;
 
     boggle_resize_board(current_board, new_board_size);
     boggle_fill_board(current_board);
@@ -231,6 +273,9 @@ int thread_create_game(void * d)
 
     changed = 1;
     playing = GP_PLAYING;
+
+    if(time_left_min != -1)
+	timer(NULL);
 
     return 0;
 }
@@ -284,8 +329,9 @@ void boggle_start_ihm(board_t * b)
     AG_TableSetRowDblClickFn(tbl_solution, &tbl_solution_click, NULL);
 
     AG_WindowShow(win);
+    win_main = win;
 
-
+    AG_AddEvent(win_main, "check_time", timer, NULL);
 
 
 
@@ -308,7 +354,8 @@ void boggle_start_ihm(board_t * b)
     AG_WindowSetGeometry(win_score, 
 			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, CMD_WIN_SIZE_Y + FOUND_WIN_SIZE_Y,
 			 SCORE_WIN_SIZE_X, SCORE_WIN_SIZE_Y);
-    AG_Label *lbl = AG_LabelNewPolled(win_score, 0, "Time: ?\nScore: %u\nFound word: %u\nPossible word: %u",
+    AG_Label *lbl = AG_LabelNewPolled(win_score, 0, "Time: %d:%d\nScore: %u\nFound word: %u\nPossible word: %u",
+		      &time_left_min, &time_left_sec,
 		      &b->score,
 		      &b->foundword->size,
 		      &b->wordlist->size);
@@ -321,7 +368,7 @@ void boggle_start_ihm(board_t * b)
 
 
 
-
+    AG_TlistItem * item;
    win_new = AG_WindowNew(AG_WINDOW_MODAL | AG_WINDOW_NOCLOSE);
    AG_WindowSetGeometry(win_new, 
 			MAIN_WIN_SIZE_X / 2 - NEW_WIN_SIZE_X / 2,
@@ -336,7 +383,7 @@ void boggle_start_ihm(board_t * b)
     int i;
     for (i = 2; i <= 7; i++)
     {
-	AG_TlistItem * item = AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
+	item = AG_TlistAdd(com->list, NULL, "%d x %d", i, i);
 	item->p1 = (void*)i;
 	if(i == new_board_size)
 	    AG_ComboSelect(com, item);
@@ -345,13 +392,19 @@ void boggle_start_ihm(board_t * b)
 
     com = AG_ComboNew(win_new, AG_COMBO_HFILL, "Time: ");
     AG_ComboSizeHint(com, "10 minutes", 11);
+    AG_TlistSetChangedFn(com->list, time_changed, NULL);
 
-    AG_ComboSelect(com, AG_TlistAdd(com->list, NULL, "unlimited", i, i));
-
+    item = AG_TlistAdd(com->list, NULL, "unlimited", i, i);
+    item->p1 = (void*)0;
 
 
     for (i = 1; i <= 10; i++)
-	AG_TlistAdd(com->list, NULL, "%d minutes", i, i);
+    {
+	item = AG_TlistAdd(com->list, NULL, "%d minutes", i, i);
+	item->p1 = (void*)i;
+	if(i == new_time)
+	    AG_ComboSelect(com, item);
+    }
 
     AG_SpacerNew(win_new, AG_SEPARATOR_VERT);
 
@@ -383,7 +436,7 @@ void boggle_start_ihm(board_t * b)
 	return;
     }
 
-    AG_BindGlobalKey(SDLK_ESCAPE, KMOD_NONE, AG_Quit);
+    //AG_BindGlobalKey(SDLK_ESCAPE, KMOD_NONE, AG_Quit);
 
     init(b);
   
@@ -511,7 +564,7 @@ void boggle_start_ihm(board_t * b)
 
 void init()
 {
-    /* on charge les case */
+    /* on charge les cases */
     SDL_Surface *temp = SDL_LoadBMP(RES_BOXES);
     c_assert2(temp, "unable to load " RES_BOXES);
     boxes = SDL_ConvertSurface(temp, screen->format, SDL_SWSURFACE);
