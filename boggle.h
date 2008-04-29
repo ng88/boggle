@@ -54,6 +54,9 @@ typedef struct
 } board_t;
 
 
+void boggle_init_rnd(unsigned int seed);
+void boggle_init_rnd_def();
+
 #define boggle_get_box(b, i, j)       ((b)->cs[i][j])
 #define boggle_set_box(b, i, j, v)    ((b)->cs[i][j] = (v))
 #define boggle_get_flag(b, i, j)      ((b)->fl[i][j])

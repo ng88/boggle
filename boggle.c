@@ -24,6 +24,16 @@ const char vowel[VOWEL_COUNT] = {'a', 'e', 'i', 'o', 'u', 'y'};
 
 */
 
+void boggle_init_rnd(unsigned int seed)
+{
+    srand(seed);
+}
+
+void boggle_init_rnd_def()
+{
+    srand(time(0));
+}
+
 void boggle_alloc_boards(board_t * b, size_t s)
 {
     b->size = s;
@@ -92,14 +102,6 @@ void boggle_resize_board(board_t * b, size_t s)
 
 void boggle_fill_board(board_t * b)
 {
-    static bool init = false;
-    if(!init)
-    {
-	srand(time(0));
-	//srand(23468798);
-	init = true;
-    }
-
     c_assert(b);
     size_t i, j;
 
