@@ -13,7 +13,7 @@
 dico_t * open_dico(char * dico)
 {
 
-    dbg_printf("loading dictionnary %s...\n", dico);
+    dbg_printf("loading dictionary %s...\n", dico);
 
     FILE * f = fopen(dico, "r");
 

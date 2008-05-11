@@ -79,6 +79,8 @@ board_t * boggle_create_board(dico_t * dico, size_t s)
     b->wordlist = create_vector(16);
     b->foundword = create_vector(8);
     b->score = 0;
+    b->scpercent = 0.0;
+    b->scmax = 0;
     b->dico = dico;
 
     boggle_alloc_boards(b, s);
@@ -229,6 +231,10 @@ void boggle_create_wordlist(board_t * b)
 	    }
 	}
     }
+
+    b->scmax = 0;
+    for(i = 0; i < vector_size(b->wordlist); ++i)
+	b->scmax += boggle_score_for_word((char*)vector_get_element_at(b->wordlist, i));
 
     vector_sort(b->wordlist, &sort_by_score);
 
@@ -416,7 +422,10 @@ void boggle_highlight(board_t * b, char letter)
 	    add_unique_word_to_list(b->foundword, b->current);
 
 	    if(old < vector_size(b->foundword))
+	    {
 		b->score += boggle_score_for_word(b->current);
+		b->scpercent = (float)boggle_board_score(b) * 100.00 / (float)boggle_board_score_max(b);
+	    }
 
 	    b->current[0] = '\0';
 	    b->current_size = 0;

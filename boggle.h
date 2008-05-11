@@ -46,6 +46,8 @@ typedef struct
     vector_t * wordlist;
     vector_t * foundword;
     score_t score;
+    score_t scmax;
+    float   scpercent;
     dico_t * dico;
 
     char current[LARGER_WORD];
@@ -65,6 +67,8 @@ void boggle_init_rnd_def();
 #define boggle_box_ycount(b)          boggle_box_xcount(b)
 #define boggle_box_count(b)           (boggle_box_xcount(b) * boggle_box_ycount(b))
 #define boggle_board_score(b)         ((b)->score)
+#define boggle_board_score_pc(b)         ((b)->scpercent)
+#define boggle_board_score_max(b)         ((b)->scmax)
 
 /** return non zero if (i, j) is a valid position */
 #define boggle_is_valid_pos(b, i, j) \

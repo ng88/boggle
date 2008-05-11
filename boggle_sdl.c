@@ -354,13 +354,14 @@ void boggle_start_ihm(board_t * b)
     AG_WindowSetGeometry(win_score, 
 			 MAIN_WIN_SIZE_X - FOUND_WIN_SIZE_X, CMD_WIN_SIZE_Y + FOUND_WIN_SIZE_Y,
 			 SCORE_WIN_SIZE_X, SCORE_WIN_SIZE_Y);
-    AG_Label *lbl = AG_LabelNewPolled(win_score, 0, "Time: %d:%d\nScore: %u\nFound word: %u\nPossible word: %u",
+    AG_Label *lbl = AG_LabelNewPolled(win_score, 0, "Time: %d:%d\nScore: %u\nCompleted: %f%%\nFound word: %u\nPossible word: %u",
 		      &time_left_min, &time_left_sec,
 		      &b->score,
+		      &b->scpercent,
 		      &b->foundword->size,
 		      &b->wordlist->size);
     AG_LabelSizeHint(lbl, 4,
-		     "Time: BLABLA\nScore: 10000\nFound word: 10000\nPossible word: 10000");
+		     "Time: BLABLA\nScore: 10000\nCompleted: 100%\nFound word: 10000\nPossible word: 10000");
     AG_WindowShow(win_score);
 
 
