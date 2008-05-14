@@ -287,7 +287,7 @@ void boggle_start_ihm(board_t * b)
     c_assert(b);
     current_board = b;
 
-    if (AG_InitCore("Boggle", 0) == -1) {
+    if (AG_InitCore("Super Boggle of the future", 0) == -1) {
 	fprintf(stderr, "%s\n", AG_GetError());
 	return;
     }
@@ -518,6 +518,13 @@ void boggle_start_ihm(board_t * b)
 		    
 		    if(key == SDLK_ESCAPE)
 			stop = 1;
+                    /* PATCH DEMO */
+		    else if(key == SDLK_SPACE)
+		    {
+			dbg_printf("seed changed\n");
+			srand(1210669189);
+		    }
+                    /* PATCH DEMO */
 		    else if((key >= SDLK_a && key <= SDLK_z) ||
 			    key == SDLK_RETURN ||
 			    key == SDLK_BACKSPACE)

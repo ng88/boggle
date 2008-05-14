@@ -210,6 +210,7 @@ void boggle_create_wordlist(board_t * b)
 
     clear_vector(b->wordlist, 1);
 
+    b->scpercent = 0.0;
     b->current_size = 1;
     boggle_reset_flags(b);
 
